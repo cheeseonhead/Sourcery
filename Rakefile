@@ -64,7 +64,7 @@ task :build do
   sh %Q(cp SourceryJS/Resources/ejs.js #{CLI_DIR}bin)
   `mv #{BUILD_DIR}release/sourcery #{CLI_DIR}bin/`
   `install_name_tool -delete_rpath @loader_path #{CLI_DIR}bin/sourcery`
-  `install_name_tool -delete_rpath /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx #{CLI_DIR}bin/sourcery`
+  `install_name_tool -delete_rpath $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx  #{CLI_DIR}bin/sourcery`
   `install_name_tool -add_rpath "@executable_path/../lib" "#{CLI_DIR}bin/sourcery"`
   sh %Q(rm -fr #{BUILD_DIR})
 end
