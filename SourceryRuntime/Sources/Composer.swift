@@ -541,23 +541,6 @@ public enum Composer {
 
         if method.isInitializer || method.isFailableInitializer {
             method.returnType = definedInType
-            if let type = method.actualDefinedInTypeName {
-                if method.isFailableInitializer {
-                    method.returnTypeName = TypeName(
-                        name: type.name,
-                        isOptional: true,
-                        isImplicitlyUnwrappedOptional: false,
-                        tuple: type.tuple,
-                        array: type.array,
-                        dictionary: type.dictionary,
-                        closure: type.closure,
-                        generic: type.generic,
-                        isProtocolComposition: type.isProtocolComposition
-                    )
-                } else if method.isInitializer {
-                    method.returnTypeName = type
-                }
-            }
         } else {
             method.returnType = resolve(method.returnTypeName, type)
         }
