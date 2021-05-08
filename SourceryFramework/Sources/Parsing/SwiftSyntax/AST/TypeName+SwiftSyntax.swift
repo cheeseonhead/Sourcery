@@ -149,6 +149,7 @@ extension TypeName {
             let type = TypeName(typeIdentifier.baseType) // TODO: add test for nested type with attributes at multiple level?
             let attributes = Attribute.from(typeIdentifier.attributes)
             self.init(name: type.name,
+                      unwrappedTypeName: type.unwrappedTypeName,
                       attributes: attributes,
                       isOptional: type.isOptional,
                       isImplicitlyUnwrappedOptional: type.isImplicitlyUnwrappedOptional,

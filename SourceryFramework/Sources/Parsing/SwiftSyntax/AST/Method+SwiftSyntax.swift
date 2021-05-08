@@ -76,7 +76,7 @@ extension SourceryMethod {
             returnTypeName = signature.output ?? TypeName(name: "Void")
         }
 
-        let funcName = identifier.last == "?" ? String(identifier.dropLast()) : identifier
+        let funcName = (identifier.last == "?" && identifier != "??") ? String(identifier.dropLast()) : identifier
         var fullName = identifier
         if let generics = genericParameterClause?.genericParameterList {
             fullName = funcName + "<\(generics.description.trimmed)>"

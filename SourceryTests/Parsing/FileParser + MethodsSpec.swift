@@ -143,8 +143,27 @@ class FileParserMethodsSpec: QuickSpec {
                             definedInTypeName: nil)
                     ]))
                 }
+                
+                it("extracts ?? func name correctly") {
+                    expect(parseFunctions("private func ??<T>() {}")).to(equal([
+                        Method(
+                            name: "??<T>()",
+                            selectorName: "??",
+                            accessLevel: (.private),
+                            isStatic: false,
+                            modifiers: [Modifier(name: "private")],
+                            definedInTypeName: nil)
+                    ]))
+                }
 
                 context("given method with parameters") {
+                    
+                    it("extracts inout optional type correctly") {
+                        let sut = parseFunctions("public func isKnownUniquelyReferenced<T>(_ object: inout T?) -> Bool where T : AnyObject")[0]
+                        
+                        expect(sut.name).to(equal("isKnownUniquelyReferenced<T>(_ object: inout T?)"))
+                    }
+                    
                     it("extracts method with single parameter properly") {
                         expect(parse("class Foo { func foo(bar: Int) {} }")).to(equal([
                             Class(name: "Foo", methods: [
