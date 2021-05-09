@@ -30,6 +30,15 @@ class FileParserVariableSpec: QuickSpec {
                     return variable
                 }
 
+                it("extracts complicated optional type correctly") {
+                    let sut = variable(
+                    """
+                    public let output_ord2: Optional<Wrapped>.Publisher.Output?
+                    """)
+                    
+                    expect(sut?.typeName.name).to(equal("Optional<Wrapped>.Publisher.Output?"))
+                }
+                
                 it("infers generic type initializer correctly") {
                     func verify(_ type: String) {
                         let parsedTypeName = variable("static let generic: \(type)")?.typeName

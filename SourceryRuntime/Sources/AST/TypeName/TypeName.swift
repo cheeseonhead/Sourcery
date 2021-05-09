@@ -23,7 +23,7 @@ import Foundation
 
         let optionalSuffix: String
         // TODO: TBR
-        if !name.hasPrefix("Optional<") && !name.contains(" where ") {
+        if !(name.hasPrefix("Optional<") && name.hasSuffix(">")) && !name.contains(" where ") {
             if isOptional {
                 optionalSuffix = "?"
             } else if isImplicitlyUnwrappedOptional {
