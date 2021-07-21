@@ -65,7 +65,7 @@ extension TypeName {
         } else if let typeIdentifier = node.as(OptionalTypeSyntax.self) {
             let type = TypeName(typeIdentifier.wrappedType)
             let needsWrapping = type.isClosure || type.isProtocolComposition
-            self.init(name: needsWrapping ? "(\(type.asSource))" : type.asSource,
+            self.init(name: needsWrapping ? "(\(type.name))" : type.name,
                       isOptional: true,
                       isImplicitlyUnwrappedOptional: false,
                       tuple: type.tuple,
@@ -114,7 +114,7 @@ extension TypeName {
 
             // TODO: TBR
             if elements.count == 1, let type = elements.first?.typeName {
-                self.init(name: type.name,
+                self.init(name: type.asSource,
                           attributes: type.attributes,
                           isOptional: type.isOptional,
                           isImplicitlyUnwrappedOptional: type.isImplicitlyUnwrappedOptional,

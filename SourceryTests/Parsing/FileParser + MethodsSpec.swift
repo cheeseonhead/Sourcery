@@ -158,6 +158,12 @@ class FileParserMethodsSpec: QuickSpec {
 
                 context("given method with parameters") {
                     
+                    it("extracts attributes in closure parameters correctly") {
+                        let sut = parseFunctions("public func foo(bar: (@convention(c) () -> Void)!)")[0]
+                        
+                        expect(sut.name).to(equal("foo(bar: (@convention(c) () -> Void)!)"))
+                    }
+                    
                     it("extracts inout optional type correctly") {
                         let sut = parseFunctions("public func isKnownUniquelyReferenced<T>(_ object: inout T?) -> Bool where T : AnyObject")[0]
                         
@@ -348,6 +354,13 @@ class FileParserMethodsSpec: QuickSpec {
                 }
 
                 context("given method with return type") {
+                       
+                    it("extracts attributes in closure return types correctly") {
+                        let sut = parseFunctions("public func NSGetUncaughtExceptionHandler() -> (@convention(c) (NSException) -> Void)?")[0]
+                        
+                        expect(sut.returnTypeName.name).to(equal("(@convention(c) (NSException) -> Void)?"))
+                    }
+                    
                     it("extracts tuple return type correctly") {
                         let expectedTypeName = TypeName(name: "(Bar, Int)", tuple: TupleType(name: "(Bar, Int)", elements: [
                             TupleElement(name: "0", typeName: TypeName(name: "Bar"), type: Class(name: "Bar")),
