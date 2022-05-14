@@ -18,6 +18,9 @@ public typealias SourceryMethod = Method
 
     /// Parameter flag whether it's inout or not
     public let `inout`: Bool
+    
+    /// Is this variadic parameter?
+    public let isVariadic: Bool
 
     // sourcery: skipEquality, skipDescription
     /// Parameter type, if known
@@ -35,7 +38,7 @@ public typealias SourceryMethod = Method
     public var annotations: Annotations = [:]
 
     /// :nodoc:
-    public init(argumentLabel: String?, name: String = "", typeName: TypeName, type: Type? = nil, defaultValue: String? = nil, annotations: [String: NSObject] = [:], isInout: Bool = false) {
+    public init(argumentLabel: String?, name: String = "", typeName: TypeName, type: Type? = nil, defaultValue: String? = nil, annotations: [String: NSObject] = [:], isInout: Bool = false, isVariadic: Bool = false) {
         self.typeName = typeName
         self.argumentLabel = argumentLabel
         self.name = name
@@ -43,10 +46,11 @@ public typealias SourceryMethod = Method
         self.defaultValue = defaultValue
         self.annotations = annotations
         self.`inout` = isInout
+        self.isVariadic = isVariadic
     }
 
     /// :nodoc:
-    public init(name: String = "", typeName: TypeName, type: Type? = nil, defaultValue: String? = nil, annotations: [String: NSObject] = [:], isInout: Bool = false) {
+    public init(name: String = "", typeName: TypeName, type: Type? = nil, defaultValue: String? = nil, annotations: [String: NSObject] = [:], isInout: Bool = false, isVariadic: Bool = false) {
         self.typeName = typeName
         self.argumentLabel = name
         self.name = name
@@ -54,10 +58,11 @@ public typealias SourceryMethod = Method
         self.defaultValue = defaultValue
         self.annotations = annotations
         self.`inout` = isInout
+        self.isVariadic = isVariadic
     }
 
     public var asSource: String {
-        let typeSuffix = ": \(`inout` ? "inout " : "")\(typeName.asSource)\(defaultValue.map { " = \($0)" } ?? "")"
+        let typeSuffix = ": \(`inout` ? "inout " : "")\(typeName.asSource)\(defaultValue.map { " = \($0)" } ?? "")" + (isVariadic ? "..." : "")
         guard argumentLabel != name else {
             return name + typeSuffix
         }
@@ -77,6 +82,7 @@ public typealias SourceryMethod = Method
             guard let name: String = aDecoder.decode(forKey: "name") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["name"])); fatalError() }; self.name = name
             guard let typeName: TypeName = aDecoder.decode(forKey: "typeName") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["typeName"])); fatalError() }; self.typeName = typeName
             self.`inout` = aDecoder.decode(forKey: "`inout`")
+            self.isVariadic = aDecoder.decode(forKey: "isVariadic")
             self.type = aDecoder.decode(forKey: "type")
             self.defaultValue = aDecoder.decode(forKey: "defaultValue")
             guard let annotations: Annotations = aDecoder.decode(forKey: "annotations") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["annotations"])); fatalError() }; self.annotations = annotations
@@ -88,6 +94,7 @@ public typealias SourceryMethod = Method
             aCoder.encode(self.name, forKey: "name")
             aCoder.encode(self.typeName, forKey: "typeName")
             aCoder.encode(self.`inout`, forKey: "`inout`")
+            aCoder.encode(self.isVariadic, forKey: "isVariadic")
             aCoder.encode(self.type, forKey: "type")
             aCoder.encode(self.defaultValue, forKey: "defaultValue")
             aCoder.encode(self.annotations, forKey: "annotations")
@@ -194,7 +201,7 @@ extension Array where Element == ClosureParameter {
 }
 
 /// Describes method
-@objc(SwiftMethod) @objcMembers public final class Method: NSObject, SourceryModel, Annotated, Definition {
+@objc(SwiftMethod) @objcMembers public final class Method: NSObject, SourceryModel, Annotated, Documented, Definition {
 
     /// Full method name, including generic constraints, i.e. `foo<T>(bar: T)`
     public let name: String
@@ -248,6 +255,9 @@ extension Array where Element == ClosureParameter {
         return returnTypeName.unwrappedTypeName
     }
 
+    /// Whether method is async method
+    public let isAsync: Bool
+
     /// Whether method throws
     public let `throws`: Bool
 
@@ -277,12 +287,6 @@ extension Array where Element == ClosureParameter {
 
     /// Whether method is a failable initializer
     public let isFailableInitializer: Bool
-
-    // sourcery: skipEquality, skipDescription, skipCoding, skipJSExport
-    /// :nodoc:
-    @available(*, deprecated, message: "Use isConvenienceInitializer instead") public var isConvenienceInitialiser: Bool {
-        isConvenienceInitialiser
-    }
 
     // sourcery: skipEquality, skipDescription
     /// Whether method is a convenience initializer
@@ -323,6 +327,8 @@ extension Array where Element == ClosureParameter {
     /// Annotations, that were created with // sourcery: annotation1, other = "annotation value", alterantive = 2
     public let annotations: Annotations
 
+    public let documentation: Documentation
+
     /// Reference to type name where the method is defined,
     /// nil if defined outside of any `enum`, `struct`, `class` etc
     public let definedInTypeName: TypeName?
@@ -354,6 +360,7 @@ extension Array where Element == ClosureParameter {
                 selectorName: String? = nil,
                 parameters: [MethodParameter] = [],
                 returnTypeName: TypeName = TypeName(name: "Void"),
+                isAsync: Bool = false,
                 throws: Bool = false,
                 rethrows: Bool = false,
                 accessLevel: AccessLevel = .internal,
@@ -363,12 +370,14 @@ extension Array where Element == ClosureParameter {
                 attributes: AttributeList = [:],
                 modifiers: [SourceryModifier] = [],
                 annotations: [String: NSObject] = [:],
+                documentation: [String] = [],
                 definedInTypeName: TypeName? = nil) {
 
         self.name = name
         self.selectorName = selectorName ?? name
         self.parameters = parameters
         self.returnTypeName = returnTypeName
+        self.isAsync = isAsync
         self.throws = `throws`
         self.rethrows = `rethrows`
         self.accessLevel = accessLevel.rawValue
@@ -378,6 +387,7 @@ extension Array where Element == ClosureParameter {
         self.attributes = attributes
         self.modifiers = modifiers
         self.annotations = annotations
+        self.documentation = documentation
         self.definedInTypeName = definedInTypeName
     }
 
@@ -390,6 +400,7 @@ extension Array where Element == ClosureParameter {
             guard let parameters: [MethodParameter] = aDecoder.decode(forKey: "parameters") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["parameters"])); fatalError() }; self.parameters = parameters
             guard let returnTypeName: TypeName = aDecoder.decode(forKey: "returnTypeName") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["returnTypeName"])); fatalError() }; self.returnTypeName = returnTypeName
             self.returnType = aDecoder.decode(forKey: "returnType")
+            self.isAsync = aDecoder.decode(forKey: "isAsync")
             self.`throws` = aDecoder.decode(forKey: "`throws`")
             self.`rethrows` = aDecoder.decode(forKey: "`rethrows`")
             guard let accessLevel: String = aDecoder.decode(forKey: "accessLevel") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["accessLevel"])); fatalError() }; self.accessLevel = accessLevel
@@ -397,6 +408,7 @@ extension Array where Element == ClosureParameter {
             self.isClass = aDecoder.decode(forKey: "isClass")
             self.isFailableInitializer = aDecoder.decode(forKey: "isFailableInitializer")
             guard let annotations: Annotations = aDecoder.decode(forKey: "annotations") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["annotations"])); fatalError() }; self.annotations = annotations
+            guard let documentation: Documentation = aDecoder.decode(forKey: "documentation") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["documentation"])); fatalError() }; self.documentation = documentation
             self.definedInTypeName = aDecoder.decode(forKey: "definedInTypeName")
             self.definedInType = aDecoder.decode(forKey: "definedInType")
             guard let attributes: AttributeList = aDecoder.decode(forKey: "attributes") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["attributes"])); fatalError() }; self.attributes = attributes
@@ -410,6 +422,7 @@ extension Array where Element == ClosureParameter {
             aCoder.encode(self.parameters, forKey: "parameters")
             aCoder.encode(self.returnTypeName, forKey: "returnTypeName")
             aCoder.encode(self.returnType, forKey: "returnType")
+            aCoder.encode(self.isAsync, forKey: "isAsync")
             aCoder.encode(self.`throws`, forKey: "`throws`")
             aCoder.encode(self.`rethrows`, forKey: "`rethrows`")
             aCoder.encode(self.accessLevel, forKey: "accessLevel")
@@ -417,6 +430,7 @@ extension Array where Element == ClosureParameter {
             aCoder.encode(self.isClass, forKey: "isClass")
             aCoder.encode(self.isFailableInitializer, forKey: "isFailableInitializer")
             aCoder.encode(self.annotations, forKey: "annotations")
+            aCoder.encode(self.documentation, forKey: "documentation")
             aCoder.encode(self.definedInTypeName, forKey: "definedInTypeName")
             aCoder.encode(self.definedInType, forKey: "definedInType")
             aCoder.encode(self.attributes, forKey: "attributes")

@@ -1,15 +1,15 @@
 [![CircleCI](https://circleci.com/gh/krzysztofzablocki/Sourcery.svg?style=shield)](https://circleci.com/gh/krzysztofzablocki/Sourcery)
 <!-- [![codecov](https://codecov.io/gh/krzysztofzablocki/Sourcery/branch/master/graph/badge.svg)](https://codecov.io/gh/krzysztofzablocki/Sourcery) -->
-[![docs](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/badge.svg)](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/index.html)
+[![docs](https://merowing.info/Sourcery/badge.svg)](https://merowing.info/Sourcery/index.html)
 [![Version](https://img.shields.io/cocoapods/v/Sourcery.svg?style=flat)](http://cocoapods.org/pods/Sourcery)
 [![License](https://img.shields.io/cocoapods/l/Sourcery.svg?style=flat)](http://cocoapods.org/pods/Sourcery)
 [![Platform](https://img.shields.io/cocoapods/p/Sourcery.svg?style=flat)](http://cocoapods.org/pods/Sourcery)
 
 **There is now a new powerful way to both write and integrate Sourcery functionality: Sourcery Pro provides powerful Stencil editor and extends Xcode with ability to handle live AST templates: [available on Mac App Store](https://apps.apple.com/us/app/sourcery-pro/id1561780836?mt=12)**
 
-[Learn more about Sourcery Pro](http://merowing.info/sourcery-pro/)
+https://user-images.githubusercontent.com/1468993/114271090-f6c19200-9a0f-11eb-9bd8-d7bb15129eb2.mp4
 
-[![](https://user-images.githubusercontent.com/1468993/114271090-f6c19200-9a0f-11eb-9bd8-d7bb15129eb2.mp4)](https://apps.apple.com/us/app/sourcery-pro/id1561780836?mt=12)
+[Learn more about Sourcery Pro](http://merowing.info/sourcery-pro/)
 
 <img src="Resources/icon-128.png">
 
@@ -57,14 +57,14 @@ Sourcery can be applied to arbitrary problems across your codebase, if you can d
 
 Most common uses are:
 
-- [Equality](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/equatable.html) & [Hashing](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/hashable.html)
-- [Enum cases & Counts](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/enum-cases.html)
-- [Lenses](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/lenses.html)
-- [Mocks & Stubs](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/mocks.html)
-- [LinuxMain](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/linuxmain.html)
-- [Decorators](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/decorator.html)
-- [Persistence and advanced Codable](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/codable.html)
-- [Property level diffing](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/diffable.html)
+- [Equality](https://merowing.info/Sourcery/equatable.html) & [Hashing](https://merowing.info/Sourcery/hashable.html)
+- [Enum cases & Counts](https://merowing.info/Sourcery/enum-cases.html)
+- [Lenses](https://merowing.info/Sourcery/lenses.html)
+- [Mocks & Stubs](https://merowing.info/Sourcery/mocks.html)
+- [LinuxMain](https://merowing.info/Sourcery/linuxmain.html)
+- [Decorators](https://merowing.info/Sourcery/decorator.html)
+- [Persistence and advanced Codable](https://merowing.info/Sourcery/codable.html)
+- [Property level diffing](https://merowing.info/Sourcery/diffable.html)
 
 But how about more specific use-cases, like automatically generating all the UI for your app `BetaSetting`? [you can use Sourcery for that too](https://github.com/krzysztofzablocki/AutomaticSettings)
 
@@ -79,6 +79,13 @@ There are plenty of tutorials for different uses of Sourcery, and you can always
 - [Codable Enums](https://littlebitesofcocoa.com/318-codable-enums) implements Codable support for Enumerations
 - [Sourcery Workshops](https://github.com/krzysztofzablocki/SourceryWorkshops)
 
+### Quick Mocking Intro & Getting Started Video
+
+You can also watch this quick getting started and intro to mocking video by Inside iOS Dev: 
+<br />
+
+[![Watch the video](Resources/Inside-iOS-Dev-Sourcery-Intro-To-Mocking-Video-Thumbnail.png)](https://youtu.be/-ZbBNuttlt4?t=214)
+
 ## Installation
 
 - _Binary form_
@@ -89,33 +96,33 @@ There are plenty of tutorials for different uses of Sourcery, and you can always
 
 	`brew install sourcery`
 
-
 - _[CocoaPods](https://cocoapods.org)_
 
     Add `pod 'Sourcery'` to your `Podfile` and run `pod update Sourcery`. This will download the latest release binary and will put it in your project's CocoaPods path so you will run it with `$PODS_ROOT/Sourcery/bin/sourcery`
 
+    If you only want to install the `sourcery` binary, you may want to use the `CLI-Only` subspec: `pod 'Sourcery', :subspecs => ['CLI-Only']`.
 
 - _[Mint](https://github.com/yonaskolb/Mint)_
 
-    Run `mint run krzysztofzablocki/Sourcery`. 
-    
-- _Building from source_
+    `mint run krzysztofzablocki/Sourcery`
+
+- _Building from Source_
 
     Download the latest release source code from [the release tab](https://github.com/krzysztofzablocki/Sourcery/releases/latest) or clone the repository and build Sourcery manually.
 
     - _Building with Swift Package Manager_
 
-        Run `swift build -c release` in the root folder. This will create a `.build/release` folder and will put the binary there. Move the **whole `.build/release` folder** to your desired destination and run with `path_to_release_folder/sourcery`
+        Run `swift build -c release` in the root folder and then copy `.build/release/sourcery` to your desired destination.
 
         > Note: JS templates are not supported when building with SPM yet.
 
     - _Building with Xcode_
 
-        Open `Sourcery.xcworkspace` and build with `Sourcery-Release` scheme. This will create `Sourcery.app` in the Derived Data folder. You can copy it to your desired destination and run with `path_to_sourcery_app/Sourcery.app/Contents/MacOS/Sourcery`
+        Run `xcodebuild -scheme sourcery -destination generic/platform=macOS -archivePath sourcery.xcarchive archive` and export the binary from the archive.
 
 ## Documentation
 
-Full documentation for the latest release is available [here](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/index.html).
+Full documentation for the latest release is available [here](http://merowing.info/Sourcery/).
 
 ## Usage
 
@@ -131,7 +138,7 @@ $ ./bin/sourcery --sources <sources path> --templates <templates path> --output 
 
 - `--sources` - Path to a source swift files or directories. You can provide multiple paths using multiple `--sources` option.
 - `--templates` - Path to templates. File or Directory. You can provide multiple paths using multiple `--templates` options.
-- `--force-parse` - File extensions of Sourcery generated file you want to parse. You can provide multiple extension using multiple `--force-parse` options. (i.e. `file.toparse.swift` will be parsed even if generated by Sourcery if `--force-parse toparse`). Useful when trying to implement a multiple phases generation.
+- `--force-parse` - File extensions of Sourcery generated file you want to parse. You can provide multiple extension using multiple `--force-parse` options. (i.e. `file.toparse.swift` will be parsed even if generated by Sourcery if `--force-parse toparse`). Useful when trying to implement a multiple phases generation. `--force-parse` can also be used to process within a sourcery annotation. For example to process code within `sourcery:inline:auto:Type.AutoCodable` annotation you can use `--force-parse AutoCodable`
 - `--output` [default: current path] - Path to output. File or Directory.
 - `--config` [default: current path] - Path to config file. File or Directory. See [Configuration file](#configuration-file).
 - `--args` - Additional arguments to pass to templates. Each argument can have an explicit value or will have implicit `true` value. Arguments should be separated with `,` without spaces (i.e. `--args arg1=value,arg2`). Arguments are accessible in templates via `argument.name`
@@ -163,7 +170,7 @@ args:
   <name>: <value>
 ```
 
-Read more about this configuration file [here](https://cdn.rawgit.com/krzysztofzablocki/Sourcery/master/docs/usage.html#configuration-file).
+Read more about this configuration file [here](https://merowing.info/Sourcery/usage.html#configuration-file).
 
 ## Issues
 If you get unverified developer warning when using binary zip distribution try:

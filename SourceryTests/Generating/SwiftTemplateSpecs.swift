@@ -187,11 +187,7 @@ class SwiftTemplateTests: QuickSpec {
                     try Generator.generate(.init(path: nil, module: nil, types: [], functions: []), types: Types(types: []), functions: [], template: SwiftTemplate(path: templatePath))
                     }
                     .to(throwError(closure: { (error) in
-                        if #available(macOS 11.3, *) {
-                            expect("\(error)").to(contain("\(templatePath): Swift/ContiguousArrayBuffer.swift:580: Fatal error: Index out of range"))
-                        } else {
-                            expect("\(error)").to(contain("\(templatePath): Fatal error: Index out of range"))
-                        }
+                        expect("\(error)").to(contain("\(templatePath): SwiftTemplate/main.swift:10: Fatal error: Template not implemented"))
                     }))
             }
 
@@ -231,6 +227,24 @@ class SwiftTemplateTests: QuickSpec {
 
                 let result = (try? (outputDir + Sourcery().generatedPath(for: templatePath)).read(.utf8))
                 expect(result).to(equal(expectedResult))
+            }
+
+            it("should change cacheKey based on includeFile modifications") {
+                let templatePath = outputDir + "Template.swifttemplate"
+                try templatePath.write(#"<%- includeFile("Utils.swift") -%>"#)
+
+                let utilsPath = outputDir + "Utils.swift"
+                try utilsPath.write(#"let foo = "bar""#)
+
+                let template = try SwiftTemplate(path: templatePath, cachePath: nil, version: "1.0.0")
+                let originalKey = template.cacheKey
+                let keyBeforeModification = template.cacheKey
+
+                try utilsPath.write(#"let foo = "baz""#)
+
+                let keyAfterModification = template.cacheKey
+                expect(originalKey).to(equal(keyBeforeModification))
+                expect(originalKey).toNot(equal(keyAfterModification))
             }
         }
 

@@ -1,4 +1,4 @@
-// Generated using Sourcery 1.4.1 — https://github.com/krzysztofzablocki/Sourcery
+// Generated using Sourcery 1.8.1 — https://github.com/krzysztofzablocki/Sourcery
 // DO NOT EDIT
 // swiftlint:disable vertical_whitespace trailing_newline
 
@@ -75,6 +75,7 @@ extension BytesRange: BytesRangeAutoJSExport {}
     var allSubscripts: [Subscript] { get }
     var initializers: [Method] { get }
     var annotations: Annotations { get }
+    var documentation: Documentation { get }
     var staticVariables: [Variable] { get }
     var staticMethods: [Method] { get }
     var classMethods: [Method] { get }
@@ -94,6 +95,7 @@ extension BytesRange: BytesRangeAutoJSExport {}
     var supertype: Type? { get }
     var attributes: AttributeList { get }
     var modifiers: [SourceryModifier] { get }
+    var fileName: String? { get }
 }
 
 extension Class: ClassAutoJSExport {}
@@ -124,6 +126,8 @@ extension ClosureParameter: ClosureParameterAutoJSExport {}
     var isOptionalReturnType: Bool { get }
     var isImplicitlyUnwrappedOptionalReturnType: Bool { get }
     var unwrappedReturnTypeName: String { get }
+    var isAsync: Bool { get }
+    var asyncKeyword: String? { get }
     var `throws`: Bool { get }
     var throwsOrRethrowsKeyword: String? { get }
     var asSource: String { get }
@@ -171,6 +175,7 @@ extension DictionaryType: DictionaryTypeAutoJSExport {}
     var allSubscripts: [Subscript] { get }
     var initializers: [Method] { get }
     var annotations: Annotations { get }
+    var documentation: Documentation { get }
     var staticVariables: [Variable] { get }
     var staticMethods: [Method] { get }
     var classMethods: [Method] { get }
@@ -189,6 +194,7 @@ extension DictionaryType: DictionaryTypeAutoJSExport {}
     var supertype: Type? { get }
     var attributes: AttributeList { get }
     var modifiers: [SourceryModifier] { get }
+    var fileName: String? { get }
 }
 
 extension Enum: EnumAutoJSExport {}
@@ -198,6 +204,7 @@ extension Enum: EnumAutoJSExport {}
     var rawValue: String? { get }
     var associatedValues: [AssociatedValue] { get }
     var annotations: Annotations { get }
+    var documentation: Documentation { get }
     var indirect: Bool { get }
     var hasAssociatedValue: Bool { get }
 }
@@ -251,6 +258,7 @@ extension Import: ImportAutoJSExport {}
     var isOptionalReturnType: Bool { get }
     var isImplicitlyUnwrappedOptionalReturnType: Bool { get }
     var unwrappedReturnTypeName: String { get }
+    var isAsync: Bool { get }
     var `throws`: Bool { get }
     var `rethrows`: Bool { get }
     var accessLevel: String { get }
@@ -266,6 +274,7 @@ extension Import: ImportAutoJSExport {}
     var isGeneric: Bool { get }
     var isOptional: Bool { get }
     var annotations: Annotations { get }
+    var documentation: Documentation { get }
     var definedInTypeName: TypeName? { get }
     var actualDefinedInTypeName: TypeName? { get }
     var definedInType: Type? { get }
@@ -280,6 +289,7 @@ extension Method: MethodAutoJSExport {}
     var name: String { get }
     var typeName: TypeName { get }
     var `inout`: Bool { get }
+    var isVariadic: Bool { get }
     var type: Type? { get }
     var typeAttributes: AttributeList { get }
     var defaultValue: String? { get }
@@ -324,6 +334,7 @@ extension Modifier: ModifierAutoJSExport {}
     var allSubscripts: [Subscript] { get }
     var initializers: [Method] { get }
     var annotations: Annotations { get }
+    var documentation: Documentation { get }
     var staticVariables: [Variable] { get }
     var staticMethods: [Method] { get }
     var classMethods: [Method] { get }
@@ -343,6 +354,7 @@ extension Modifier: ModifierAutoJSExport {}
     var supertype: Type? { get }
     var attributes: AttributeList { get }
     var modifiers: [SourceryModifier] { get }
+    var fileName: String? { get }
 }
 
 extension Protocol: ProtocolAutoJSExport {}
@@ -372,6 +384,7 @@ extension Protocol: ProtocolAutoJSExport {}
     var allSubscripts: [Subscript] { get }
     var initializers: [Method] { get }
     var annotations: Annotations { get }
+    var documentation: Documentation { get }
     var staticVariables: [Variable] { get }
     var staticMethods: [Method] { get }
     var classMethods: [Method] { get }
@@ -391,6 +404,7 @@ extension Protocol: ProtocolAutoJSExport {}
     var supertype: Type? { get }
     var attributes: AttributeList { get }
     var modifiers: [SourceryModifier] { get }
+    var fileName: String? { get }
 }
 
 extension Struct: StructAutoJSExport {}
@@ -408,6 +422,7 @@ extension Struct: StructAutoJSExport {}
     var writeAccess: String { get }
     var isMutable: Bool { get }
     var annotations: Annotations { get }
+    var documentation: Documentation { get }
     var definedInTypeName: TypeName? { get }
     var actualDefinedInTypeName: TypeName? { get }
     var definedInType: Type? { get }
@@ -469,6 +484,7 @@ extension TupleType: TupleTypeAutoJSExport {}
     var allSubscripts: [Subscript] { get }
     var initializers: [Method] { get }
     var annotations: Annotations { get }
+    var documentation: Documentation { get }
     var staticVariables: [Variable] { get }
     var staticMethods: [Method] { get }
     var classMethods: [Method] { get }
@@ -488,6 +504,7 @@ extension TupleType: TupleTypeAutoJSExport {}
     var supertype: Type? { get }
     var attributes: AttributeList { get }
     var modifiers: [SourceryModifier] { get }
+    var fileName: String? { get }
 }
 
 extension Type: TypeAutoJSExport {}
@@ -531,12 +548,15 @@ extension TypesCollection: TypesCollectionAutoJSExport {}
     var typeName: TypeName { get }
     var type: Type? { get }
     var isComputed: Bool { get }
+    var isAsync: Bool { get }
+    var `throws`: Bool { get }
     var isStatic: Bool { get }
     var readAccess: String { get }
     var writeAccess: String { get }
     var isMutable: Bool { get }
     var defaultValue: String? { get }
     var annotations: Annotations { get }
+    var documentation: Documentation { get }
     var attributes: AttributeList { get }
     var modifiers: [SourceryModifier] { get }
     var isFinal: Bool { get }

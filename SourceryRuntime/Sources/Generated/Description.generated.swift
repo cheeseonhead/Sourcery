@@ -1,4 +1,4 @@
-// Generated using Sourcery 1.4.1 — https://github.com/krzysztofzablocki/Sourcery
+// Generated using Sourcery 1.8.1 — https://github.com/krzysztofzablocki/Sourcery
 // DO NOT EDIT
 // swiftlint:disable vertical_whitespace
 
@@ -77,6 +77,8 @@ extension ClosureType {
         string += "parameters = \(String(describing: self.parameters)), "
         string += "returnTypeName = \(String(describing: self.returnTypeName)), "
         string += "actualReturnTypeName = \(String(describing: self.actualReturnTypeName)), "
+        string += "isAsync = \(String(describing: self.isAsync)), "
+        string += "asyncKeyword = \(String(describing: self.asyncKeyword)), "
         string += "`throws` = \(String(describing: self.`throws`)), "
         string += "throwsOrRethrowsKeyword = \(String(describing: self.throwsOrRethrowsKeyword)), "
         string += "asSource = \(String(describing: self.asSource))"
@@ -114,6 +116,7 @@ extension EnumCase {
         string += "rawValue = \(String(describing: self.rawValue)), "
         string += "associatedValues = \(String(describing: self.associatedValues)), "
         string += "annotations = \(String(describing: self.annotations)), "
+        string += "documentation = \(String(describing: self.documentation)), "
         string += "indirect = \(String(describing: self.indirect)), "
         string += "hasAssociatedValue = \(String(describing: self.hasAssociatedValue))"
         return string
@@ -163,6 +166,7 @@ extension Method {
         string += "selectorName = \(String(describing: self.selectorName)), "
         string += "parameters = \(String(describing: self.parameters)), "
         string += "returnTypeName = \(String(describing: self.returnTypeName)), "
+        string += "isAsync = \(String(describing: self.isAsync)), "
         string += "`throws` = \(String(describing: self.`throws`)), "
         string += "`rethrows` = \(String(describing: self.`rethrows`)), "
         string += "accessLevel = \(String(describing: self.accessLevel)), "
@@ -170,6 +174,7 @@ extension Method {
         string += "isClass = \(String(describing: self.isClass)), "
         string += "isFailableInitializer = \(String(describing: self.isFailableInitializer)), "
         string += "annotations = \(String(describing: self.annotations)), "
+        string += "documentation = \(String(describing: self.documentation)), "
         string += "definedInTypeName = \(String(describing: self.definedInTypeName)), "
         string += "attributes = \(String(describing: self.attributes)), "
         string += "modifiers = \(String(describing: self.modifiers))"
@@ -184,6 +189,7 @@ extension MethodParameter {
         string += "name = \(String(describing: self.name)), "
         string += "typeName = \(String(describing: self.typeName)), "
         string += "`inout` = \(String(describing: self.`inout`)), "
+        string += "isVariadic = \(String(describing: self.isVariadic)), "
         string += "typeAttributes = \(String(describing: self.typeAttributes)), "
         string += "defaultValue = \(String(describing: self.defaultValue)), "
         string += "annotations = \(String(describing: self.annotations)), "
@@ -233,6 +239,7 @@ extension Subscript {
         string += "writeAccess = \(String(describing: self.writeAccess)), "
         string += "isMutable = \(String(describing: self.isMutable)), "
         string += "annotations = \(String(describing: self.annotations)), "
+        string += "documentation = \(String(describing: self.documentation)), "
         string += "definedInTypeName = \(String(describing: self.definedInTypeName)), "
         string += "actualDefinedInTypeName = \(String(describing: self.actualDefinedInTypeName)), "
         string += "attributes = \(String(describing: self.attributes)), "
@@ -291,6 +298,7 @@ extension Type {
         string += "rawSubscripts = \(String(describing: self.rawSubscripts)), "
         string += "initializers = \(String(describing: self.initializers)), "
         string += "annotations = \(String(describing: self.annotations)), "
+        string += "documentation = \(String(describing: self.documentation)), "
         string += "staticVariables = \(String(describing: self.staticVariables)), "
         string += "staticMethods = \(String(describing: self.staticMethods)), "
         string += "classMethods = \(String(describing: self.classMethods)), "
@@ -304,7 +312,8 @@ extension Type {
         string += "parentName = \(String(describing: self.parentName)), "
         string += "parentTypes = \(String(describing: self.parentTypes)), "
         string += "attributes = \(String(describing: self.attributes)), "
-        string += "modifiers = \(String(describing: self.modifiers))"
+        string += "modifiers = \(String(describing: self.modifiers)), "
+        string += "fileName = \(String(describing: self.fileName))"
         return string
     }
 }
@@ -337,6 +346,8 @@ extension Variable {
         string += "name = \(String(describing: self.name)), "
         string += "typeName = \(String(describing: self.typeName)), "
         string += "isComputed = \(String(describing: self.isComputed)), "
+        string += "isAsync = \(String(describing: self.isAsync)), "
+        string += "`throws` = \(String(describing: self.`throws`)), "
         string += "isStatic = \(String(describing: self.isStatic)), "
         string += "readAccess = \(String(describing: self.readAccess)), "
         string += "writeAccess = \(String(describing: self.writeAccess)), "
@@ -344,6 +355,7 @@ extension Variable {
         string += "isMutable = \(String(describing: self.isMutable)), "
         string += "defaultValue = \(String(describing: self.defaultValue)), "
         string += "annotations = \(String(describing: self.annotations)), "
+        string += "documentation = \(String(describing: self.documentation)), "
         string += "attributes = \(String(describing: self.attributes)), "
         string += "modifiers = \(String(describing: self.modifiers)), "
         string += "isFinal = \(String(describing: self.isFinal)), "

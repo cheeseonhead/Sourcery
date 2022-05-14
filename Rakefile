@@ -44,8 +44,8 @@ task :tests do
   print_info "Running Unit Tests"
   # we can't use SPM directly because it doesn't link rpath and thus often uses wrong dylib
   # sh %Q(swift test)
-  xcpretty %Q(xcodebuild -scheme sourcery)
-  xcpretty %Q(xcodebuild -scheme Sourcery-Package test)
+  xcpretty %Q(xcodebuild -scheme sourcery -destination platform=macOS,arch=x86_64)
+  xcpretty %Q(xcodebuild -scheme Sourcery-Package -destination platform=macOS,arch=x86_64 test)
 end
 
 desc "Delete the build/ directory"
@@ -54,19 +54,32 @@ task :clean do
   sh %Q(rm -fr build)
 end
 
-task :build do
-  print_info "Building project"
-  sh %Q(swift build -c release --disable-sandbox --build-path #{BUILD_DIR})
+task :build, [:build_fat] do |t, args|
+  args.with_defaults(:build_fat => false)
+  print_info "Building project (fat: #{args[:build_fat]})"
+
+  # Prepare the export directory
   sh %Q(rm -fr #{CLI_DIR})
   sh %Q(mkdir -p "#{CLI_DIR}bin")
-  sh %Q(mkdir -p "#{CLI_DIR}lib")
-  sh %Q(cp lib_InternalSwiftSyntaxParser.dylib #{CLI_DIR}lib)
+  output_path="#{CLI_DIR}bin/sourcery"
+
+  if args[:build_fat]
+    sh %Q(swift build --disable-sandbox -c release --arch arm64 --build-path #{BUILD_DIR})
+    sh %Q(swift build --disable-sandbox -c release --arch x86_64 --build-path #{BUILD_DIR})
+    sh %Q(lipo -create -output #{output_path} #{BUILD_DIR}arm64-apple-macosx/release/sourcery #{BUILD_DIR}x86_64-apple-macosx/release/sourcery)
+    sh %Q(strip -rSTX #{output_path})
+  else
+    sh %Q(swift build --disable-sandbox -c release --build-path #{BUILD_DIR})
+    sh %Q(cp #{BUILD_DIR}release/sourcery #{output_path})
+  end
+
+  # Export the build products and clean up
   sh %Q(cp SourceryJS/Resources/ejs.js #{CLI_DIR}bin)
-  `mv #{BUILD_DIR}release/sourcery #{CLI_DIR}bin/`
-  `install_name_tool -delete_rpath @loader_path #{CLI_DIR}bin/sourcery`
-  `install_name_tool -delete_rpath $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx  #{CLI_DIR}bin/sourcery`
-  `install_name_tool -add_rpath "@executable_path/../lib" "#{CLI_DIR}bin/sourcery"`
-  # sh %Q(rm -fr #{BUILD_DIR})
+  sh %Q(rm -fr #{BUILD_DIR})
+end
+
+task :fat_build do
+  Rake::Task[:build].invoke(true)
 end
 
 ## [ Code Generated ] ################################################
@@ -87,12 +100,18 @@ task :generate_internal_boilerplate_code => [:build, :run_sourcery, :clean] do
 end
 
 ## [ Docs ] ##########################################################
+def clean_jazzy
+  # jazzy divs are broken, so we need to fix them
+  sh "find docs -type f -name '*.html' -print0 | xargs -0 -I % sh -c \"tac '%' | sed '2d' | tac > tmp && mv tmp '%';\""
+end
 
 desc "Update docs"
 task :docs do
   print_info "Updating docs"
   temp_build_dir = "#{BUILD_DIR}tmp/"
-  sh "sourcekitten doc --spm --module-name SourceryRuntim > docs.json && bundle exec jazzy --clean --skip-undocumented --exclude=/*/*.generated.swift,/*/BytesRange.swift,/*/Typealias.swift,/*/FileParserResult.swift && rm docs.json"
+  # tac Enum.html | sed '2d' | tac > Enum.html
+  sh "sourcekitten doc --spm --module-name SourceryRuntime > docs.json && bundle exec jazzy --clean --skip-undocumented --exclude=/*/*.generated.swift,/*/BytesRange.swift,/*/Typealias.swift,/*/FileParserResult.swift && rm docs.json"
+  clean_jazzy
   sh "rm -fr #{temp_build_dir}"
 end
 
@@ -101,6 +120,7 @@ task :validate_docs do
   print_info "Checking docs are up to date"
   temp_build_dir = "#{BUILD_DIR}tmp/"
   sh "sourcekitten doc --spm --module-name SourceryRuntime > docs.json && bundle exec jazzy --skip-undocumented --exclude=/*/*.generated.swift,/*/BytesRange.swift,/*/Typealias.swift,/*/FileParserResult.swift && rm docs.json"
+  clean_jazzy
   sh "rm -fr #{temp_build_dir}"
 end
 
@@ -112,7 +132,7 @@ namespace :release do
   task :prepare => [:clean, :install_dependencies, :check_environment_variables, :check_docs, :update_metadata, :generate_internal_boilerplate_code, :tests]
 
   desc 'Build the current version and release it to GitHub, CocoaPods and Homebrew'
-  task :build_and_deploy => [:check_versions, :build, :tag_release, :push_to_origin, :github, :cocoapods, :homebrew]
+  task :build_and_deploy => [:check_versions, :fat_build, :tag_release, :push_to_origin, :github, :cocoapods, :homebrew]
 
   desc 'Create a new release on GitHub, CocoaPods and Homebrew'
   task :new => [:prepare, :build_and_deploy]
@@ -307,7 +327,7 @@ namespace :release do
     # Update command line tool version
     command_line_tool_update_version(new_version)
 
-    manual_commit(["CHANGELOG.md", "Sourcery.podspec", "SourceryFramework.podspec", "SourceryRuntime.podspec", "SourceryUtils.podspec", "Sourcery.xcodeproj/project.pbxproj", VERSION_FILE], "docs: update metadata for #{new_version} release")
+    manual_commit(["CHANGELOG.md", "Sourcery.podspec", "SourceryFramework.podspec", "SourceryRuntime.podspec", "SourceryUtils.podspec", VERSION_FILE], "docs: update metadata for #{new_version} release")
   end
 
   desc 'Create a tag for the project version and push to remote'

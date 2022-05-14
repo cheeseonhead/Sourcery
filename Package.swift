@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.5
 
 import PackageDescription
 import Foundation
@@ -19,20 +19,19 @@ let package = Package(
         .library(name: "SourceryFramework", targets: ["SourceryFramework"]),
     ],
     dependencies: [
-        .package(name: "Yams", url: "https://github.com/jpsim/Yams.git", .exact("4.0.0")),
-        .package(name: "Commander", url: "https://github.com/kylef/Commander.git", .exact("0.9.1")),
+        .package(url: "https://github.com/jpsim/Yams.git", from: "4.0.6"),
+        .package(url: "https://github.com/kylef/Commander.git", .exact("0.9.1")),
         // PathKit needs to be exact to avoid a SwiftPM bug where dependency resolution takes a very long time.
-        .package(name: "PathKit", url: "https://github.com/kylef/PathKit.git", .exact("1.0.0")),
-        .package(name: "StencilSwiftKit", url: "https://github.com/SwiftGen/StencilSwiftKit.git", .exact("2.8.0")),
-        .package(name: "XcodeProj", url: "https://github.com/tuist/xcodeproj", .exact("7.18.0")),
-        .package(name: "SwiftSyntax",
-                 url: "https://github.com/apple/swift-syntax.git",
-                 .exact("0.50400.0")),
+        .package(url: "https://github.com/kylef/PathKit.git", .exact("1.0.1")),
+        .package(url: "https://github.com/StencilProject/Stencil.git", .upToNextMajor(from: "0.14.0")),
+        .package(url: "https://github.com/SwiftGen/StencilSwiftKit.git", .exact("2.8.0")),
+        .package(url: "https://github.com/tuist/XcodeProj.git", .exact("8.3.1")),
+        .package(url: "https://github.com/apple/swift-syntax.git", .exact("0.50600.1")),
         .package(url: "https://github.com/Quick/Quick.git", from: "3.0.0"),
         .package(url: "https://github.com/Quick/Nimble.git", from: "9.0.0")
     ],
     targets: [
-        .target(
+        .executableTarget(
             name: "SourceryExecutable",
             dependencies: ["SourceryLib"],
             path: "SourceryExecutable",
@@ -53,13 +52,20 @@ let package = Package(
                 "PathKit",
                 "Yams",
                 "StencilSwiftKit",
-                "SwiftSyntax",
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                "lib_InternalSwiftSyntaxParser",
                 "XcodeProj",
                 "TryCatch"
             ],
             path: "Sourcery",
             exclude: [
                 "Templates",
+            ],
+            // Pass `-dead_strip_dylibs` to ignore the dynamic version of `lib_InternalSwiftSyntaxParser`
+            // that ships with SwiftSyntax because we want the static version from
+            // `StaticInternalSwiftSyntaxParser`.
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-dead_strip_dylibs"])
             ]
         ),
         .target(
@@ -83,13 +89,21 @@ let package = Package(
             name: "SourceryFramework",
             dependencies: [
               "PathKit",
-              "SwiftSyntax",
+              .product(name: "SwiftSyntax", package: "swift-syntax"),
+              .product(name: "SwiftSyntaxParser", package: "swift-syntax"),
+              "lib_InternalSwiftSyntaxParser",
               "SourceryUtils",
               "SourceryRuntime"
             ],
             path: "SourceryFramework",
             exclude: [
                 "Info.plist"
+            ],
+            // Pass `-dead_strip_dylibs` to ignore the dynamic version of `lib_InternalSwiftSyntaxParser`
+            // that ships with SwiftSyntax because we want the static version from
+            // `StaticInternalSwiftSyntaxParser`.
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-dead_strip_dylibs"])
             ]
         ),
         .target(
@@ -200,8 +214,7 @@ let package = Package(
                 "CodableContext",
                 "CodableContextTests",
                 "Tests/Generated",
-                "Tests/Info.plist",
-                "default.profraw"
+                "Tests/Info.plist"
             ],
             sources: [
                 // LinuxMain is not compiled as part of the target
@@ -213,30 +226,11 @@ let package = Package(
                 .copy("Tests/Context"),
                 .copy("Tests/Expected")
             ]
+        ),
+        .binaryTarget(
+            name: "lib_InternalSwiftSyntaxParser",
+            url: "https://github.com/keith/StaticInternalSwiftSyntaxParser/releases/download/5.6/lib_InternalSwiftSyntaxParser.xcframework.zip",
+            checksum: "88d748f76ec45880a8250438bd68e5d6ba716c8042f520998a438db87083ae9d"
         )
     ]
 )
-
-hookInternalSwiftSyntaxParser()
-
-/// We need to manually add an -rpath to the project so the tests can run via Xcode
-/// If we are running from console (swift build & friend) we don't need to do it
-func hookInternalSwiftSyntaxParser() {
-    let isFromTerminal = ProcessInfo.processInfo.environment.values.contains("/usr/bin/swift") || ProcessInfo.processInfo.environment.values.contains(where: { $0.contains("sourcekitten") || $0.contains("/bin/rake") || $0.contains("bin/bundle") })
-    if !isFromTerminal {
-        package
-            .targets
-            .filter { $0.isTest || $0.name == "SourceryLib" }
-            .forEach { $0.installSwiftSyntaxParser() }
-     }
-}
-
-extension PackageDescription.Target {
-    func installSwiftSyntaxParser() {
-        linkerSettings = [.unsafeFlags(["-rpath", packageRoot])]
-    }
-
-    var packageRoot: String {
-        return URL(fileURLWithPath: #file).deletingLastPathComponent().path
-    }
-}

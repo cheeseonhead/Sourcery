@@ -131,23 +131,27 @@ extension TypeName {
                 self.init(name: name, tuple: TupleType(name: name, elements: elements))
             }
         } else if let typeIdentifier = node.as(FunctionTypeSyntax.self) {
-            /// TBR
-//            let name = typeIdentifier.sourcerySafeTypeIdentifier
-
             let elements = typeIdentifier.arguments.map { node -> ClosureParameter in
                 let firstName = node.name?.text.trimmed.nilIfNotValidParameterName
+                let typeName = TypeName(node.type)
+                let specifiers = TypeName.specifiers(from: node.type)
+                
                 return ClosureParameter(
                   argumentLabel: firstName,
                   name: node.secondName?.text.trimmed ?? firstName,
-                  typeName: TypeName(node.type))
+                  typeName: typeName,
+                  isInout: specifiers.isInOut
+                )
             }
             let returnTypeName = TypeName(typeIdentifier.returnType)
+            let asyncKeyword = typeIdentifier.asyncKeyword.map { $0.text.trimmed }
             let throwsOrRethrows = typeIdentifier.throwsOrRethrowsKeyword.map { $0.text.trimmed }
-            let name = "\(elements.asSource)\(throwsOrRethrows != nil ? " \(throwsOrRethrows!)" : "") -> \(returnTypeName.asSource)"
-            self.init(name: name, closure: ClosureType(name: name, parameters: elements, returnTypeName: returnTypeName, throwsOrRethrowsKeyword: throwsOrRethrows))
+            let name = "\(elements.asSource)\(asyncKeyword != nil ? " \(asyncKeyword!)" : "")\(throwsOrRethrows != nil ? " \(throwsOrRethrows!)" : "") -> \(returnTypeName.asSource)"
+            self.init(name: name, closure: ClosureType(name: name, parameters: elements, returnTypeName: returnTypeName, asyncKeyword: asyncKeyword, throwsOrRethrowsKeyword: throwsOrRethrows))
         } else if let typeIdentifier = node.as(AttributedTypeSyntax.self) {
             let type = TypeName(typeIdentifier.baseType) // TODO: add test for nested type with attributes at multiple level?
             let attributes = Attribute.from(typeIdentifier.attributes)
+
             self.init(name: type.name,
                       unwrappedTypeName: type.unwrappedTypeName,
                       attributes: attributes,
@@ -166,6 +170,25 @@ extension TypeName {
 //            assertionFailure("This is unexpected \(node)")
             self.init(node.sourcerySafeTypeIdentifier)
         }
+    }
+}
+
+extension TypeName {
+    static func specifiers(from type: TypeSyntax?) -> (isInOut: Bool, unused: Bool) {
+        guard let type = type else {
+            return (false, false)
+        }
+
+        var isInOut = false
+        if let typeIdentifier = type.as(AttributedTypeSyntax.self), let specifier = typeIdentifier.specifier {
+            if specifier.tokenKind == .inoutKeyword {
+                isInOut = true
+            } else {
+                assertionFailure("Unhandled specifier")
+            }
+        }
+        
+        return (isInOut, false)
     }
 }
 

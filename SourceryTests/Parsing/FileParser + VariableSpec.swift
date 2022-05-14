@@ -15,14 +15,14 @@ class FileParserVariableSpec: QuickSpec {
     override func spec() {
         describe("Parser") {
             describe("parseVariable") {
-                func variable(_ code: String) -> Variable? {
+                func variable(_ code: String, parseDocumentation: Bool = false) -> Variable? {
                     let wrappedCode =
                         """
                         struct Wrapper {
                             \(code)
                         }
                         """
-                    guard let parser = try? makeParser(for: wrappedCode) else { fail(); return nil }
+                    guard let parser = try? makeParser(for: wrappedCode, parseDocumentation: parseDocumentation) else { fail(); return nil }
                     let result = try? parser.parse()
                     let variable = result?.types.first?.variables.first
                     variable?.definedInType = nil
@@ -110,6 +110,46 @@ class FileParserVariableSpec: QuickSpec {
                                          ]
                                 )
                         ))
+                }
+                
+                context("given variable defined in protocol") {
+                    func variable(_ code: String) -> Variable? {
+                        let wrappedCode =
+                            """
+                            protocol Wrapper {
+                                \(code)
+                            }
+                            """
+                        guard let parser = try? makeParser(for: wrappedCode) else { fail(); return nil }
+                        let result = try? parser.parse()
+                        let variable = result?.types.first?.variables.first
+                        variable?.definedInType = nil
+                        variable?.definedInTypeName = nil
+                        return variable
+                    }
+                    
+                    it("reports variable mutability") {
+                        expect(variable("var name: String { get } ")?.isMutable).to(beFalse())
+                        expect(variable("var name: String { get set }")?.isMutable).to(beTrue())
+                        
+                        let internalVariable = variable("var name: String { get set }")
+                        expect(internalVariable?.writeAccess).to(equal("internal"))
+                        expect(internalVariable?.readAccess).to(equal("internal"))
+
+                        let publicVariable = variable("public var name: String { get set }")
+                        expect(publicVariable?.writeAccess).to(equal("public"))
+                        expect(publicVariable?.readAccess).to(equal("public"))
+                    }
+                    
+                    it("reports variable concurrency") {
+                        expect(variable("var name: String { get } ")?.isAsync).to(beFalse())
+                        expect(variable("var name: String { get async }")?.isAsync).to(beTrue())
+                    }
+                    
+                    it("reports variable throwability") {
+                        expect(variable("var name: String { get } ")?.throws).to(beFalse())
+                        expect(variable("var name: String { get throws }")?.throws).to(beTrue())
+                    }
                 }
 
                 context("given variable with initial value") {
@@ -207,6 +247,10 @@ class FileParserVariableSpec: QuickSpec {
                     expect(variable("let name: Int")).to(equal(Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .none), isComputed: false)))
                     expect(variable("var name: Int")).to(equal(Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .internal), isComputed: false)))
                     expect(variable("var name: Int { \nget { return 0 } \nset {} }")).to(equal(Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .internal), isComputed: true)))
+                    expect(variable("var name: Int { \nget { return 0 } }")).to(equal(Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .none), isComputed: true, isAsync: false, throws: false)))
+                    expect(variable("var name: Int { \nget async { return 0 } }")).to(equal(Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .none), isComputed: true, isAsync: true, throws: false)))
+                    expect(variable("var name: Int { \nget throws { return 0 } }")).to(equal(Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .none), isComputed: true, isAsync: false, throws: true)))
+                    expect(variable("var name: Int { \nget async throws { return 0 } }")).to(equal(Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .none), isComputed: true, isAsync: true, throws: true)))
                     expect(variable("var name: Int \n{ willSet { } }")).to(equal(Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .internal), isComputed: false)))
                     expect(variable("var name: Int { \ndidSet {} }")).to(equal(Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .internal), isComputed: false)))
                 }
@@ -256,11 +300,13 @@ class FileParserVariableSpec: QuickSpec {
                         let expectedVariable = Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .none), isComputed: true)
                         expectedVariable.annotations["isSet"] = NSNumber(value: true)
                         expectedVariable.annotations["numberOfIterations"] = NSNumber(value: 2)
+                        expectedVariable.documentation = ["isSet is used for something useful"]
 
                         let result = variable(        "// sourcery: isSet\n" +
                                                            "/// isSet is used for something useful\n" +
                                                            "// sourcery: numberOfIterations = 2\n" +
-                                                           "var name: Int { return 2 }")
+                                                           "var name: Int { return 2 }",
+                                                      parseDocumentation: true)
                         expect(result).to(equal(expectedVariable))
                     }
 
@@ -273,6 +319,14 @@ class FileParserVariableSpec: QuickSpec {
                                                            "// sourcery: numberOfIterations = 2\n" +
                                                            "var name: Int { return 2 }")
                         expect(result).to(equal(expectedVariable))
+                    }
+                    
+                    it("extracts trailing annotations") {
+                        let expectedVariable = Variable(name: "name", typeName: TypeName(name: "Int"), accessLevel: (read: .internal, write: .none), isComputed: true)
+                        expectedVariable.annotations["jsonKey"] = "json_key" as NSString
+                        expectedVariable.annotations["skipEquability"] = NSNumber(value: true)
+
+                        expect(variable("// sourcery: jsonKey = \"json_key\"\nvar name: Int { return 2 } // sourcery: skipEquability")).to(equal(expectedVariable))
                     }
                 }
             }

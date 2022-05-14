@@ -15,8 +15,8 @@ class FileParserSpec: QuickSpec {
     override func spec() {
         describe("Parser") {
             describe("parse") {
-                func parse(_ code: String) -> [Type] {
-                    guard let parserResult = try? makeParser(for: code).parse() else { fail(); return [] }
+                func parse(_ code: String, parseDocumentation: Bool = false) -> [Type] {
+                    guard let parserResult = try? makeParser(for: code, parseDocumentation: parseDocumentation).parse() else { fail(); return [] }
                     return parserResult.types
                 }
 
@@ -313,6 +313,15 @@ class FileParserSpec: QuickSpec {
                         expectedType.annotations["thirdLine"] = NSNumber(value: 4543)
 
                         expect(parse("// sourcery: thirdLine = 4543\n/// comment\n// sourcery: firstLine\nclass Foo: TestProtocol { }"))
+                                .to(equal([expectedType]))
+                    }
+
+                    it("extracts documentation correctly") {
+                        let expectedType = Class(name: "Foo", accessLevel: .internal, isExtension: false, variables: [], inheritedTypes: ["TestProtocol"])
+                        expectedType.annotations["thirdLine"] = NSNumber(value: 4543)
+                        expectedType.documentation = ["doc", "comment", "baz"]
+
+                        expect(parse("/// doc\n// sourcery: thirdLine = 4543\n/// comment\n// firstLine\n///baz\nclass Foo: TestProtocol { }", parseDocumentation: true))
                                 .to(equal([expectedType]))
                     }
                 }
@@ -719,16 +728,34 @@ class FileParserSpec: QuickSpec {
                                      """))
                             .to(equal([
                                 Enum(name: "Foo", accessLevel: .internal, isExtension: false, inheritedTypes: ["String"], cases: [EnumCase(name: "optionA", rawValue: "Value")])
-                                ]))
+                            ]))
 
                         expect(parse("""
                                      enum Foo: Int {
                                        case optionA = 2
                                      }
                                      """))
-                          .to(equal([
-                                        Enum(name: "Foo", accessLevel: .internal, isExtension: false, inheritedTypes: ["Int"], cases: [EnumCase(name: "optionA", rawValue: "2")])
-                                    ]))
+                            .to(equal([
+                                Enum(name: "Foo", accessLevel: .internal, isExtension: false, inheritedTypes: ["Int"], cases: [EnumCase(name: "optionA", rawValue: "2")])
+                            ]))
+
+                        expect(parse("""
+                                     enum Foo: Int {
+                                       case optionA = -1
+                                       case optionB = 0
+                                     }
+                                     """))
+                            .to(equal([
+                                Enum(
+                                    name: "Foo",
+                                    accessLevel: .internal,
+                                    isExtension: false,
+                                    inheritedTypes: ["Int"],
+                                    cases: [
+                                        EnumCase(name: "optionA", rawValue: "-1"),
+                                        EnumCase(name: "optionB", rawValue: "0")
+                                    ])
+                            ]))
                     }
 
                     it("extracts enums without rawType") {
@@ -780,13 +807,13 @@ class FileParserSpec: QuickSpec {
                                          /// Option C
                                          indirect case optionC(Foo)
                                      }
-                                     """))
+                                     """, parseDocumentation: true))
                                 .to(equal([
                                     Enum(name: "Foo", accessLevel: .internal, isExtension: false, inheritedTypes: [], cases:
                                         [
-                                            EnumCase(name: "optionA", indirect: false),
-                                            EnumCase(name: "optionB"),
-                                            EnumCase(name: "optionC", associatedValues: [AssociatedValue(typeName: TypeName(name: "Foo"))], indirect: true)
+                                            EnumCase(name: "optionA", documentation: ["Option A"], indirect: false),
+                                            EnumCase(name: "optionB", documentation: ["Option B"]),
+                                            EnumCase(name: "optionC", associatedValues: [AssociatedValue(typeName: TypeName(name: "Foo"))], documentation: ["Option C"], indirect: true)
                                         ])
                                 ]))
                     }

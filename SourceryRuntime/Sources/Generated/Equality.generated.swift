@@ -1,4 +1,4 @@
-// Generated using Sourcery 1.4.1 — https://github.com/krzysztofzablocki/Sourcery
+// Generated using Sourcery 1.8.1 — https://github.com/krzysztofzablocki/Sourcery
 // DO NOT EDIT
 // swiftlint:disable vertical_whitespace
 
@@ -79,6 +79,8 @@ extension ClosureType {
         if self.name != rhs.name { return false }
         if self.parameters != rhs.parameters { return false }
         if self.returnTypeName != rhs.returnTypeName { return false }
+        if self.isAsync != rhs.isAsync { return false }
+        if self.asyncKeyword != rhs.asyncKeyword { return false }
         if self.`throws` != rhs.`throws` { return false }
         if self.throwsOrRethrowsKeyword != rhs.throwsOrRethrowsKeyword { return false }
         return true
@@ -119,6 +121,7 @@ extension EnumCase {
         if self.rawValue != rhs.rawValue { return false }
         if self.associatedValues != rhs.associatedValues { return false }
         if self.annotations != rhs.annotations { return false }
+        if self.documentation != rhs.documentation { return false }
         if self.indirect != rhs.indirect { return false }
         return true
     }
@@ -184,6 +187,7 @@ extension Method {
         if self.selectorName != rhs.selectorName { return false }
         if self.parameters != rhs.parameters { return false }
         if self.returnTypeName != rhs.returnTypeName { return false }
+        if self.isAsync != rhs.isAsync { return false }
         if self.`throws` != rhs.`throws` { return false }
         if self.`rethrows` != rhs.`rethrows` { return false }
         if self.accessLevel != rhs.accessLevel { return false }
@@ -191,6 +195,7 @@ extension Method {
         if self.isClass != rhs.isClass { return false }
         if self.isFailableInitializer != rhs.isFailableInitializer { return false }
         if self.annotations != rhs.annotations { return false }
+        if self.documentation != rhs.documentation { return false }
         if self.definedInTypeName != rhs.definedInTypeName { return false }
         if self.attributes != rhs.attributes { return false }
         if self.modifiers != rhs.modifiers { return false }
@@ -205,6 +210,7 @@ extension MethodParameter {
         if self.name != rhs.name { return false }
         if self.typeName != rhs.typeName { return false }
         if self.`inout` != rhs.`inout` { return false }
+        if self.isVariadic != rhs.isVariadic { return false }
         if self.defaultValue != rhs.defaultValue { return false }
         if self.annotations != rhs.annotations { return false }
         return true
@@ -252,6 +258,7 @@ extension Subscript {
         if self.readAccess != rhs.readAccess { return false }
         if self.writeAccess != rhs.writeAccess { return false }
         if self.annotations != rhs.annotations { return false }
+        if self.documentation != rhs.documentation { return false }
         if self.definedInTypeName != rhs.definedInTypeName { return false }
         if self.attributes != rhs.attributes { return false }
         if self.modifiers != rhs.modifiers { return false }
@@ -303,12 +310,14 @@ extension Type {
         if self.rawMethods != rhs.rawMethods { return false }
         if self.rawSubscripts != rhs.rawSubscripts { return false }
         if self.annotations != rhs.annotations { return false }
+        if self.documentation != rhs.documentation { return false }
         if self.inheritedTypes != rhs.inheritedTypes { return false }
         if self.inherits != rhs.inherits { return false }
         if self.containedTypes != rhs.containedTypes { return false }
         if self.parentName != rhs.parentName { return false }
         if self.attributes != rhs.attributes { return false }
         if self.modifiers != rhs.modifiers { return false }
+        if self.fileName != rhs.fileName { return false }
         if self.kind != rhs.kind { return false }
         return true
     }
@@ -357,11 +366,14 @@ extension Variable {
         if self.name != rhs.name { return false }
         if self.typeName != rhs.typeName { return false }
         if self.isComputed != rhs.isComputed { return false }
+        if self.isAsync != rhs.isAsync { return false }
+        if self.`throws` != rhs.`throws` { return false }
         if self.isStatic != rhs.isStatic { return false }
         if self.readAccess != rhs.readAccess { return false }
         if self.writeAccess != rhs.writeAccess { return false }
         if self.defaultValue != rhs.defaultValue { return false }
         if self.annotations != rhs.annotations { return false }
+        if self.documentation != rhs.documentation { return false }
         if self.attributes != rhs.attributes { return false }
         if self.modifiers != rhs.modifiers { return false }
         if self.definedInTypeName != rhs.definedInTypeName { return false }
@@ -446,6 +458,8 @@ extension ClosureType {
         hasher.combine(self.name)
         hasher.combine(self.parameters)
         hasher.combine(self.returnTypeName)
+        hasher.combine(self.isAsync)
+        hasher.combine(self.asyncKeyword)
         hasher.combine(self.`throws`)
         hasher.combine(self.throwsOrRethrowsKeyword)
         return hasher.finalize()
@@ -487,6 +501,7 @@ extension EnumCase {
         hasher.combine(self.rawValue)
         hasher.combine(self.associatedValues)
         hasher.combine(self.annotations)
+        hasher.combine(self.documentation)
         hasher.combine(self.indirect)
         return hasher.finalize()
     }
@@ -552,6 +567,7 @@ extension Method {
         hasher.combine(self.selectorName)
         hasher.combine(self.parameters)
         hasher.combine(self.returnTypeName)
+        hasher.combine(self.isAsync)
         hasher.combine(self.`throws`)
         hasher.combine(self.`rethrows`)
         hasher.combine(self.accessLevel)
@@ -559,6 +575,7 @@ extension Method {
         hasher.combine(self.isClass)
         hasher.combine(self.isFailableInitializer)
         hasher.combine(self.annotations)
+        hasher.combine(self.documentation)
         hasher.combine(self.definedInTypeName)
         hasher.combine(self.attributes)
         hasher.combine(self.modifiers)
@@ -573,6 +590,7 @@ extension MethodParameter {
         hasher.combine(self.name)
         hasher.combine(self.typeName)
         hasher.combine(self.`inout`)
+        hasher.combine(self.isVariadic)
         hasher.combine(self.defaultValue)
         hasher.combine(self.annotations)
         return hasher.finalize()
@@ -623,6 +641,7 @@ extension Subscript {
         hasher.combine(self.readAccess)
         hasher.combine(self.writeAccess)
         hasher.combine(self.annotations)
+        hasher.combine(self.documentation)
         hasher.combine(self.definedInTypeName)
         hasher.combine(self.attributes)
         hasher.combine(self.modifiers)
@@ -674,12 +693,14 @@ extension Type {
         hasher.combine(self.rawMethods)
         hasher.combine(self.rawSubscripts)
         hasher.combine(self.annotations)
+        hasher.combine(self.documentation)
         hasher.combine(self.inheritedTypes)
         hasher.combine(self.inherits)
         hasher.combine(self.containedTypes)
         hasher.combine(self.parentName)
         hasher.combine(self.attributes)
         hasher.combine(self.modifiers)
+        hasher.combine(self.fileName)
         hasher.combine(kind)
         return hasher.finalize()
     }
@@ -728,11 +749,14 @@ extension Variable {
         hasher.combine(self.name)
         hasher.combine(self.typeName)
         hasher.combine(self.isComputed)
+        hasher.combine(self.isAsync)
+        hasher.combine(self.`throws`)
         hasher.combine(self.isStatic)
         hasher.combine(self.readAccess)
         hasher.combine(self.writeAccess)
         hasher.combine(self.defaultValue)
         hasher.combine(self.annotations)
+        hasher.combine(self.documentation)
         hasher.combine(self.attributes)
         hasher.combine(self.modifiers)
         hasher.combine(self.definedInTypeName)

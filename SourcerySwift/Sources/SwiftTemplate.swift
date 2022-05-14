@@ -179,7 +179,7 @@ open class SwiftTemplate {
         let binaryPath: Path
 
         if let cachePath = cachePath,
-            let hash = code.sha256(),
+            let hash = cacheKey,
             let hashPath = hash.addingPercentEncoding(withAllowedCharacters: CharacterSet.alphanumerics) {
 
             binaryPath = cachePath + hashPath
@@ -240,7 +240,7 @@ open class SwiftTemplate {
                                                        arguments: arguments,
                                                        currentDirectoryPath: buildDir)
 
-        if compilationResult.exitCode != 0 || !compilationResult.error.isEmpty {
+        if compilationResult.exitCode != EXIT_SUCCESS {
             throw [compilationResult.output, compilationResult.error]
                 .filter { !$0.isEmpty }
                 .joined(separator: "\n")
@@ -269,6 +269,19 @@ open class SwiftTemplate {
             ]
         )
         """
+    }
+
+    var cacheKey: String? {
+        var contents = code
+
+        // For every included file, make sure that the path and modification date are included in the key
+        let files = includedFiles.map({ $0.absolute() }).sorted(by: { $0.string < $1.string })
+        for file in files {
+            let modificationDate = file.modifiedDate?.timeIntervalSinceReferenceDate ?? 0
+            contents += "\n// \(file.string)-\(modificationDate)"
+        }
+
+        return contents.sha256()
     }
 
     private func copyRuntimePackage(to path: Path) throws {
@@ -301,11 +314,19 @@ private extension String {
 }
 
 private extension Process {
-    static func runCommand(path: String, arguments: [String], environment: [String: String] = [:], currentDirectoryPath: Path? = nil) throws -> ProcessResult {
+    static func runCommand(path: String, arguments: [String], currentDirectoryPath: Path? = nil) throws -> ProcessResult {
         let task = Process()
+        var environment = ProcessInfo.processInfo.environment
+
+        // https://stackoverflow.com/questions/67595371/swift-package-calling-usr-bin-swift-errors-with-failed-to-open-macho-file-to
+        if ProcessInfo.processInfo.environment.keys.contains("OS_ACTIVITY_DT_MODE") {
+            environment = ProcessInfo.processInfo.environment
+            environment["OS_ACTIVITY_DT_MODE"] = nil
+        }
+
         task.launchPath = path
-        task.arguments = arguments
         task.environment = environment
+        task.arguments = arguments
         if let currentDirectoryPath = currentDirectoryPath {
             if #available(OSX 10.13, *) {
                 task.currentDirectoryURL = currentDirectoryPath.url
@@ -313,7 +334,6 @@ private extension Process {
                 task.currentDirectoryPath = currentDirectoryPath.description
             }
         }
-        task.environment = ProcessInfo.processInfo.environment
 
         let outputPipe = Pipe()
         let errorPipe = Pipe()

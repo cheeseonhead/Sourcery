@@ -16,7 +16,7 @@
     <a title="Usage  Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="index.html">Sourcery 1.4.1 Docs</a> (91% documented)</p>
+        <p><a href="index.html">Sourcery 1.8.1 Docs</a> (100% documented)</p>
         <p class="header-right"><a href="https://github.com/krzysztofzablocki/Sourcery"><img src="img/gh.png"/>View on GitHub</a></p>
         <p class="header-right">
           <form role="search" action="search.json">
@@ -69,6 +69,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="codable.html">Codable</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Protocols/Diffable.html">Diffable</a>
               </li>
               <li class="nav-group-task">
                 <a href="diffable.html">Diffable</a>
@@ -159,7 +162,16 @@
             <a href="Other%20Classes.html">Other Classes</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a href="Classes/ClosureParameter.html">ClosureParameter</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/DiffableResult.html">DiffableResult</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="Classes/GenericRequirement.html">GenericRequirement</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Classes/GenericRequirement/Relationship.html">– Relationship</a>
               </li>
               <li class="nav-group-task">
                 <a href="Classes/Import.html">Import</a>
@@ -201,7 +213,24 @@
                 <a href="Protocols/Definition.html">Definition</a>
               </li>
               <li class="nav-group-task">
+                <a href="Protocols/Documented.html">Documented</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="Protocols/Typed.html">Typed</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="Other%20Typealiases.html">Other Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="Other%20Typealiases.html#/s:15SourceryRuntime11Annotationsa">Annotations</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Other%20Typealiases.html#/s:15SourceryRuntime13Documentationa">Documentation</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="Other%20Typealiases.html#/s:15SourceryRuntime0A8Modifiera">SourceryModifier</a>
               </li>
             </ul>
           </li>
@@ -216,10 +245,11 @@
 <p>Sourcery is a command line tool, you can either run it manually or in a custom build phase using following command:</p>
 <pre class="highlight plaintext"><code>$ ./sourcery --sources &lt;sources path&gt; --templates &lt;templates path&gt; --output &lt;output path&gt;
 </code></pre>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>this command may be different depending on the way in which you installed Sourcery (see <a href="installing.html">Installing</a>)</p>
 
-<blockquote>
-<p>Note: this command may be different depending on the way in which you installed Sourcery (see <a href="installing.html">Installing</a>)</p>
-</blockquote>
+</div>
 <h3 id='command-line-options' class='heading'>Command line options</h3>
 
 <ul>
@@ -292,12 +322,15 @@ Single configuration file can contain multiple configurations under root <code>c
   <span class="pi">-</span> <span class="s">&lt;source file path&gt;</span>
 </code></pre>
 
-<p>Or you can provide project which will be scanned and which source files will be processed. You can use several <code>project</code> or <code>target</code> objects to scan multiple targets from one project or to scan multiple projects.</p>
+<p>Or you can provide project which will be scanned and which source files will be processed. You can use several <code>project</code> or <code>target</code> objects to scan multiple targets from one project or to scan multiple projects. You can provide paths to XCFramework files if your target has any and you want to process their <code>swiftinterface</code> files.</p>
 <pre class="highlight yaml"><code><span class="na">project</span><span class="pi">:</span>
   <span class="na">file</span><span class="pi">:</span> <span class="s">&lt;path to xcodeproj file&gt;</span>
   <span class="na">target</span><span class="pi">:</span>
     <span class="na">name</span><span class="pi">:</span> <span class="s">&lt;target name&gt;</span>
     <span class="na">module</span><span class="pi">:</span> <span class="s">&lt;module name&gt; //required if different from target name</span>
+    <span class="na">xcframeworks</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="s">&lt;path to xcframework file&gt;</span>
+        <span class="pi">-</span> <span class="s">&lt;path to xcframework file&gt;</span>
 </code></pre>
 <h4 id='excluding-sources-or-templates' class='heading'>Excluding sources or templates</h4>
 
@@ -337,22 +370,22 @@ When source is a project you can use <code>exclude</code> key to exclude some of
   <span class="na">path</span><span class="pi">:</span> <span class="s">&lt;output path&gt;</span>
   <span class="na">link</span><span class="pi">:</span>
     <span class="na">project</span><span class="pi">:</span> <span class="s">&lt;path to the xcodeproj to link to&gt;</span>
-    <span class="na">target</span><span class="pi">:</span> <span class="s">&lt;name of the target to link to&gt;</span>
+    <span class="na">target</span><span class="pi">:</span> <span class="s">&lt;name of the target to link to&gt; // or targets</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">target1</span><span class="pi">,</span> <span class="nv">target2</span><span class="pi">,</span> <span class="nv">...</span><span class="pi">]</span>
     <span class="na">group</span><span class="pi">:</span> <span class="s">&lt;group in the project to add files to&gt; // by default files are added to project's root group</span>
 </code></pre>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>Paths in configuration file are by default relative to configuration file path. If you want to specify absolute path start it with <code>/</code>.</p>
 
-<blockquote>
-<p>Note: Paths in configuration file are by default relative to configuration file path. If you want to specify absolute path start it with <code>/</code>.</p>
-</blockquote>
+</div>
 
           </section>
         </section>
         <section id="footer">
           <p>Copyright © 2016-2021 Pixle. All rights reserved.</p>
-          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.6</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="noopener" rel="external">jazzy ♪♫ v0.14.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="noopener" rel="external">Realm</a> project.</p>
         </section>
       </article>
     </div>
   </body>
-</div>
 </html>

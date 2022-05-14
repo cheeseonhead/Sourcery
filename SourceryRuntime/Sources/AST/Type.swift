@@ -9,7 +9,7 @@ import Foundation
 public typealias AttributeList = [String: [Attribute]]
 
 /// Defines Swift type
-@objcMembers public class Type: NSObject, SourceryModel, Annotated {
+@objcMembers public class Type: NSObject, SourceryModel, Annotated, Documented {
 
     /// :nodoc:
     public var module: String?
@@ -128,7 +128,7 @@ public typealias AttributeList = [String: [Attribute]]
     }
 
     private static func uniqueMethodFilter(_ lhs: Method, rhs: Method) -> Bool {
-        return lhs.name == rhs.name && lhs.isStatic == rhs.isStatic && lhs.isClass == rhs.isClass
+        return lhs.name == rhs.name && lhs.isStatic == rhs.isStatic && lhs.isClass == rhs.isClass && lhs.actualReturnTypeName == rhs.actualReturnTypeName
     }
 
     // sourcery: skipEquality, skipDescription
@@ -224,6 +224,8 @@ public typealias AttributeList = [String: [Attribute]]
 
     /// All annotations for this type
     public var annotations: Annotations = [:]
+
+    public var documentation: Documentation = []
 
     /// Static variables defined in this type
     public var staticVariables: [Variable] {
@@ -330,10 +332,18 @@ public typealias AttributeList = [String: [Attribute]]
     /// Type modifiers, i.e. `private`, `final`
     public var modifiers: [SourceryModifier]
 
-    // Path to file where the type is defined
+    /// Path to file where the type is defined
     // sourcery: skipDescription, skipEquality, skipJSExport
-    /// :nodoc:
-    public var path: String?
+    public var path: String? {
+        didSet {
+            if let path = path {
+                fileName = (path as NSString).lastPathComponent
+            }
+        }
+    }
+
+    /// File name where the type was defined
+    public var fileName: String?
 
     /// :nodoc:
     public init(name: String = "",
@@ -349,6 +359,7 @@ public typealias AttributeList = [String: [Attribute]]
                 attributes: AttributeList = [:],
                 modifiers: [SourceryModifier] = [],
                 annotations: [String: NSObject] = [:],
+                documentation: [String] = [],
                 isGeneric: Bool = false) {
 
         self.localName = name
@@ -365,6 +376,7 @@ public typealias AttributeList = [String: [Attribute]]
         self.attributes = attributes
         self.modifiers = modifiers
         self.annotations = annotations
+        self.documentation = documentation
         self.isGeneric = isGeneric
 
         super.init()
@@ -411,6 +423,7 @@ public typealias AttributeList = [String: [Attribute]]
             self.bodyBytesRange = aDecoder.decode(forKey: "bodyBytesRange")
             self.completeDeclarationRange = aDecoder.decode(forKey: "completeDeclarationRange")
             guard let annotations: Annotations = aDecoder.decode(forKey: "annotations") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["annotations"])); fatalError() }; self.annotations = annotations
+            guard let documentation: Documentation = aDecoder.decode(forKey: "documentation") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["documentation"])); fatalError() }; self.documentation = documentation
             guard let inheritedTypes: [String] = aDecoder.decode(forKey: "inheritedTypes") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["inheritedTypes"])); fatalError() }; self.inheritedTypes = inheritedTypes
             guard let based: [String: String] = aDecoder.decode(forKey: "based") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["based"])); fatalError() }; self.based = based
             guard let basedTypes: [String: Type] = aDecoder.decode(forKey: "basedTypes") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["basedTypes"])); fatalError() }; self.basedTypes = basedTypes
@@ -424,6 +437,7 @@ public typealias AttributeList = [String: [Attribute]]
             guard let attributes: AttributeList = aDecoder.decode(forKey: "attributes") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["attributes"])); fatalError() }; self.attributes = attributes
             guard let modifiers: [SourceryModifier] = aDecoder.decode(forKey: "modifiers") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["modifiers"])); fatalError() }; self.modifiers = modifiers
             self.path = aDecoder.decode(forKey: "path")
+            self.fileName = aDecoder.decode(forKey: "fileName")
         }
 
         /// :nodoc:
@@ -441,6 +455,7 @@ public typealias AttributeList = [String: [Attribute]]
             aCoder.encode(self.bodyBytesRange, forKey: "bodyBytesRange")
             aCoder.encode(self.completeDeclarationRange, forKey: "completeDeclarationRange")
             aCoder.encode(self.annotations, forKey: "annotations")
+            aCoder.encode(self.documentation, forKey: "documentation")
             aCoder.encode(self.inheritedTypes, forKey: "inheritedTypes")
             aCoder.encode(self.based, forKey: "based")
             aCoder.encode(self.basedTypes, forKey: "basedTypes")
@@ -454,6 +469,7 @@ public typealias AttributeList = [String: [Attribute]]
             aCoder.encode(self.attributes, forKey: "attributes")
             aCoder.encode(self.modifiers, forKey: "modifiers")
             aCoder.encode(self.path, forKey: "path")
+            aCoder.encode(self.fileName, forKey: "fileName")
         }
 // sourcery:end
 }

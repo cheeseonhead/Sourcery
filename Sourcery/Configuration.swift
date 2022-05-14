@@ -3,6 +3,7 @@ import XcodeProj
 import PathKit
 import Yams
 import SourceryRuntime
+import QuartzCore
 
 public struct Project {
     public let file: XcodeProj
@@ -11,15 +12,55 @@ public struct Project {
     public let exclude: [Path]
 
     public struct Target {
+
+        public struct XCFramework {
+
+            public let path: Path
+            public let swiftInterfacePath: Path
+
+            public init(rawPath: String, relativePath: Path) throws {
+                let frameworkRelativePath = Path(rawPath, relativeTo: relativePath)
+                guard let framework = frameworkRelativePath.components.last else {
+                    throw Configuration.Error.invalidXCFramework(message: "Framework path invalid. Expected String.")
+                }
+                let `extension` = Path(framework).`extension`
+                guard `extension` == "xcframework" else {
+                    throw Configuration.Error.invalidXCFramework(message: "Framework path invalid. Expected path to xcframework file.")
+                }
+                let moduleName = Path(framework).lastComponentWithoutExtension
+                guard
+                    let simulatorSlicePath = frameworkRelativePath.glob("*")
+                        .first(where: { $0.lastComponent.contains("simulator") })
+                else {
+                    throw Configuration.Error.invalidXCFramework(message: "Framework path invalid. Expected to find simulator slice.")
+                }
+                let modulePath = simulatorSlicePath + Path("\(moduleName).framework/Modules/\(moduleName).swiftmodule/")
+                guard let interfacePath = modulePath.glob("*.swiftinterface").first(where: { $0.lastComponent.contains("simulator") })
+                else {
+                    throw Configuration.Error.invalidXCFramework(message: "Framework path invalid. Expected to find .swiftinterface.")
+                }
+                self.path = frameworkRelativePath
+                self.swiftInterfacePath = interfacePath
+            }
+        }
+
         public let name: String
         public let module: String
+        public let xcframeworks: [XCFramework]
 
-        public init(dict: [String: String]) throws {
-            guard let name = dict["name"] else {
+        public init(dict: [String: Any], relativePath: Path) throws {
+            guard let name = dict["name"] as? String else {
                 throw Configuration.Error.invalidSources(message: "Target name is not provided. Expected string.")
             }
             self.name = name
-            self.module = dict["module"] ?? name
+            self.module = (dict["module"] as? String) ?? name
+            do {
+                self.xcframeworks = try (dict["xcframeworks"] as? [String])?
+                    .map { try XCFramework(rawPath: $0, relativePath: relativePath) } ?? []
+            } catch let error as Configuration.Error {
+                Log.warning(error.description)
+                self.xcframeworks = []
+            }
         }
     }
 
@@ -29,10 +70,10 @@ public struct Project {
         }
 
         let targetsArray: [Target]
-        if let targets = dict["target"] as? [[String: String]] {
-            targetsArray = try targets.map({ try Target(dict: $0) })
-        } else if let target = dict["target"] as? [String: String] {
-            targetsArray = try [Target(dict: target)]
+        if let targets = dict["target"] as? [[String: Any]] {
+            targetsArray = try targets.map({ try Target(dict: $0, relativePath: relativePath) })
+        } else if let target = dict["target"] as? [String: Any] {
+            targetsArray = try [Target(dict: target, relativePath: relativePath)]
         } else {
             throw Configuration.Error.invalidSources(message: "'target' key is missing. Expected object or array of objects.")
         }
@@ -82,12 +123,35 @@ public struct Paths {
         self.include = include
         self.exclude = exclude
 
-        let include = self.include.flatMap { $0.allPaths }
-        let exclude = self.exclude.flatMap { $0.allPaths }
+        let start = CFAbsoluteTimeGetCurrent()
+
+        let include = self.include.parallelFlatMap { $0.processablePaths }
+        let exclude = self.exclude.parallelFlatMap { $0.processablePaths }
 
         self.allPaths = Array(Set(include).subtracting(Set(exclude))).sorted()
+
+        Log.benchmark("Resolving Paths took \(CFAbsoluteTimeGetCurrent() - start)")
     }
 
+}
+
+extension Path {
+    public var processablePaths: [Path] {
+        if isDirectory {
+            return (try? recursiveUnhiddenChildren()) ?? []
+        } else {
+            return [self]
+        }
+    }
+
+    public func recursiveUnhiddenChildren() throws -> [Path] {
+        FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.pathKey], options: [.skipsHiddenFiles, .skipsPackageDescendants], errorHandler: nil)?.compactMap { object in
+            if let url = object as? URL {
+                return self + Path(url.path)
+            }
+            return nil
+        } ?? []
+    }
 }
 
 public enum Source {
@@ -123,20 +187,23 @@ public struct Output {
     public struct LinkTo {
         public let project: XcodeProj
         public let projectPath: Path
-        public let target: String
+        public let targets: [String]
         public let group: String?
 
         public init(dict: [String: Any], relativePath: Path) throws {
             guard let project = dict["project"] as? String else {
                 throw Configuration.Error.invalidOutput(message: "No project file path provided.")
             }
-            guard let target = dict["target"] as? String else {
-                throw Configuration.Error.invalidOutput(message: "No target name provided.")
+            if let target = dict["target"] as? String {
+                self.targets = [target]
+            } else if let targets = dict["targets"] as? [String] {
+                self.targets = targets
+            } else {
+                throw Configuration.Error.invalidOutput(message: "No target(s) provided.")
             }
             let projectPath = Path(project, relativeTo: relativePath)
             self.projectPath = projectPath
             self.project = try XcodeProj(path: projectPath)
-            self.target = target
             self.group = dict["group"] as? String
         }
     }
@@ -159,7 +226,12 @@ public struct Output {
         self.path = Path(path, relativeTo: relativePath)
 
         if let linkToDict = dict["link"] as? [String: Any] {
-            self.linkTo = try? LinkTo(dict: linkToDict, relativePath: relativePath)
+            do {
+                self.linkTo = try LinkTo(dict: linkToDict, relativePath: relativePath)
+            } catch {
+                self.linkTo = nil
+                Log.warning(error)
+            }
         } else {
             self.linkTo = nil
         }
@@ -177,6 +249,7 @@ public struct Configuration {
     public enum Error: Swift.Error, CustomStringConvertible {
         case invalidFormat(message: String)
         case invalidSources(message: String)
+        case invalidXCFramework(message: String)
         case invalidTemplates(message: String)
         case invalidOutput(message: String)
         case invalidCacheBasePath(message: String)
@@ -188,6 +261,8 @@ public struct Configuration {
                 return "Invalid config file format. \(message)"
             case .invalidSources(let message):
                 return "Invalid sources. \(message)"
+            case .invalidXCFramework(let message):
+                return "Invalid xcframework. \(message)"
             case .invalidTemplates(let message):
                 return "Invalid templates. \(message)"
             case .invalidOutput(let message):
@@ -205,6 +280,7 @@ public struct Configuration {
     public let output: Output
     public let cacheBasePath: Path
     public let forceParse: [String]
+    public let parseDocumentation: Bool
     public let args: [String: NSObject]
 
     public init(
@@ -240,7 +316,9 @@ public struct Configuration {
         }
         self.templates = templates
 
-        self.forceParse = dict["force-parse"] as? [String] ?? []
+        self.forceParse = dict["forceParse"] as? [String] ?? []
+
+        self.parseDocumentation = dict["parseDocumentation"] as? Bool ?? false
 
         if let output = dict["output"] as? String {
             self.output = Output(Path(output, relativeTo: relativePath))
@@ -261,12 +339,13 @@ public struct Configuration {
         self.args = dict["args"] as? [String: NSObject] ?? [:]
     }
 
-    public init(sources: Paths, templates: Paths, output: Path, cacheBasePath: Path, forceParse: [String], args: [String: NSObject]) {
+    public init(sources: Paths, templates: Paths, output: Path, cacheBasePath: Path, forceParse: [String], parseDocumentation: Bool, args: [String: NSObject]) {
         self.source = .sources(sources)
         self.templates = templates
         self.output = Output(output, linkTo: nil)
         self.cacheBasePath = cacheBasePath
         self.forceParse = forceParse
+        self.parseDocumentation = parseDocumentation
         self.args = args
     }
 
