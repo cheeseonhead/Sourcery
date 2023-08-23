@@ -146,6 +146,39 @@ public protocol AccessLevelProtocol: AutoMockable {
     func loadConfiguration() -> String?
 }
 
-protocol StaticMethodProtocol:AutoMockable {
-    static func staticFunction(String) -> String
+protocol StaticMethodProtocol: AutoMockable {
+    static func staticFunction(_: String) -> String
+}
+
+protocol StubProtocol {}
+protocol StubWithAnyNameProtocol {}
+
+protocol AnyProtocol: AutoMockable {
+    var a: any StubProtocol { get }
+    var b: (any StubProtocol)? { get }
+    var c: (any StubProtocol)! { get }
+    var d: (((any StubProtocol)?) -> Void) { get }
+    var e: [(any StubProtocol)?] { get }
+    func f(_ x: (any StubProtocol)?, y: (any StubProtocol)!, z: any StubProtocol)
+    var g: any StubProtocol { get }
+    var h: (any StubProtocol)? { get }
+    var i: (any StubProtocol)! { get }
+    func j(x: (any StubProtocol)?, y: (any StubProtocol)!, z: any StubProtocol) async -> String
+    func k(x: ((any StubProtocol)?) -> Void, y: (any StubProtocol) -> Void)
+    func l(x: (((any StubProtocol)?) -> Void), y: ((any StubProtocol) -> Void))
+    var anyConfusingPropertyName: any StubProtocol { get }
+    func m(anyConfusingArgumentName: any StubProtocol)
+    func n(x: @escaping ((any StubProtocol)?) -> Void)
+    var o: any StubWithAnyNameProtocol { get }
+    func p(_ x: (any StubWithAnyNameProtocol)?)
+    func q() -> any StubProtocol
+    func r() -> (any StubProtocol)?
+    func s() -> () -> any StubProtocol
+    func t() -> () -> (any StubProtocol)?
+    func u() -> (Int, () -> (any StubProtocol)?)
+    func v() -> (Int, (() -> any StubProtocol)?)
+    func w() -> [(any StubProtocol)?]
+    func x() -> [String: (any StubProtocol)?]
+    func y() -> (any StubProtocol, (any StubProtocol)?)
+    func z() -> any StubProtocol & CustomStringConvertible
 }

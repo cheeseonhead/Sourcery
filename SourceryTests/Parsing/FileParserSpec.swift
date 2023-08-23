@@ -91,6 +91,42 @@ class FileParserSpec: QuickSpec {
                             "}")
                         expect(result.first).to(equal(expectedType))
                     }
+
+                    it("extracts annotations when declaration has an attribute on the preceding line") {
+                        let annotations = ["Annotation": NSNumber(value: true)]
+
+                        let expectedClass = Class(name: "SomeClass", variables: [], attributes: ["MainActor": [Attribute(name: "MainActor")]], annotations: annotations)
+                        let result = parse("""
+                        //sourcery: Annotation
+                        @MainActor
+                        class SomeClass {
+                        }
+                        """)
+                        expect(result.first).to(equal(expectedClass))
+                    }
+
+                    it("extracts annotations when declaration has a directive on the preceding line") {
+                        let annotations = ["Annotation": NSNumber(value: true)]
+                        let result = parse("""
+                        //sourcery: Annotation
+                        #warning("some warning")
+                        class SomeClass {
+                        }
+                        """)
+                        expect(result.first?.annotations).to(equal(annotations))
+                    }
+
+                    it("extracts annotations when declaration has a directive and an attribute on the preceding line") {
+                        let annotations = ["Annotation": NSNumber(value: true)]
+                        let result = parse("""
+                        //sourcery: Annotation
+                        #warning("some warning")
+                        @MainActor
+                        class SomeClass {
+                        }
+                        """)
+                        expect(result.first?.annotations).to(equal(annotations))
+                    }
                 }
 
                 context("given struct") {
@@ -323,6 +359,41 @@ class FileParserSpec: QuickSpec {
 
                         expect(parse("/// doc\n// sourcery: thirdLine = 4543\n/// comment\n// firstLine\n///baz\nclass Foo: TestProtocol { }", parseDocumentation: true))
                                 .to(equal([expectedType]))
+                    }
+
+                    it("extracts documentation correctly if there is a directive on preceeding line") {
+                        let expectedType = Class(name: "Foo", accessLevel: .internal, isExtension: false, variables: [], inheritedTypes: ["TestProtocol"])
+                        expectedType.annotations["thirdLine"] = NSNumber(value: 4543)
+                        expectedType.documentation = ["doc", "comment", "baz"]
+
+                        expect(parse("""
+                            /// doc
+                            // sourcery: thirdLine = 4543
+                            /// comment
+                            // firstLine
+                            ///baz
+                            #warning("a warning")
+                            class Foo: TestProtocol { }
+                            """, parseDocumentation: true))
+                        .to(equal([expectedType]))
+                    }
+
+                    it("extracts documentation correctly if there is a directive and an attribute on preceeding line") {
+                        let expectedType = Class(name: "Foo", accessLevel: .internal, isExtension: false, variables: [], inheritedTypes: ["TestProtocol"], attributes: ["MainActor": [Attribute(name: "MainActor")]])
+                        expectedType.annotations["thirdLine"] = NSNumber(value: 4543)
+                        expectedType.documentation = ["doc", "comment", "baz"]
+
+                        expect(parse("""
+                            /// doc
+                            // sourcery: thirdLine = 4543
+                            /// comment
+                            // firstLine
+                            ///baz
+                            #warning("a warning")
+                            @MainActor
+                            class Foo: TestProtocol { }
+                            """, parseDocumentation: true))
+                        .to(equal([expectedType]))
                     }
                 }
 
@@ -756,6 +827,15 @@ class FileParserSpec: QuickSpec {
                                         EnumCase(name: "optionB", rawValue: "0")
                                     ])
                             ]))
+
+                        expect(parse("""
+                                     enum Foo: Int {
+                                       case optionA = 2 // comment
+                                     }
+                                     """))
+                            .to(equal([
+                                Enum(name: "Foo", accessLevel: .internal, isExtension: false, inheritedTypes: ["Int"], cases: [EnumCase(name: "optionA", rawValue: "2")])
+                            ]))
                     }
 
                     it("extracts enums without rawType") {
@@ -786,6 +866,15 @@ class FileParserSpec: QuickSpec {
                                                 ])
                                         ])
                                 ]))
+                    }
+
+                    it("parses enums with multibyte cases with associated types") {
+                        let expectedEnum = Enum(name: "Foo", cases: [
+                            EnumCase(name: "こんにちは", associatedValues: [
+                                AssociatedValue(localName: nil, externalName: nil, typeName: TypeName(name: "Int"))
+                            ])
+                        ])
+                        expect(parse("enum Foo { case こんにちは(Int) }")).to(equal([expectedEnum]))
                     }
 
                     it("extracts enums with indirect cases") {
