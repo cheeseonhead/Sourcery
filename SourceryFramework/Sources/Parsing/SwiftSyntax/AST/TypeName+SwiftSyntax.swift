@@ -24,7 +24,7 @@ extension TypeName {
         /* TODO: redesign what `TypeName` represents, it can represent all those different variants
          Furthermore if `TypeName` was used to store Type the whole composer process could probably be simplified / optimized?
          */
-        if let typeIdentifier = node.as(SimpleTypeIdentifierSyntax.self) {
+        if let typeIdentifier = node.as(IdentifierTypeSyntax.self) {
             let name = typeIdentifier.name.text.trimmed // TODO: typeIdentifier.sourcerySafeTypeIdentifier ?
             let generic = typeIdentifier.genericArgumentClause.map { GenericType(name: typeIdentifier.name.text, node: $0) }
 
@@ -45,11 +45,15 @@ extension TypeName {
                     let valueTypeName = generic!.typeParameters[1].typeName
                     let dictionary = DictionaryType(name: "Dictionary<\(keyTypeName.asSource), \(valueTypeName.asSource)>", valueTypeName: valueTypeName, keyTypeName: keyTypeName)
                     self.init(name: dictionary.name, dictionary: dictionary, generic: dictionary.asGeneric)
+                case ("Set", 1?):
+                    let elementTypeName = generic!.typeParameters[0].typeName
+                    let set = SetType(name: "Set<\(elementTypeName.asSource)>", elementTypeName: elementTypeName)
+                    self.init(name: set.name, set: set, generic: set.asGeneric)
                 default:
                     self.init(name: typeIdentifier.sourcerySafeTypeIdentifier, generic: generic)
                 }
             }
-        } else if let typeIdentifier = node.as(MemberTypeIdentifierSyntax.self) {
+        } else if let typeIdentifier = node.as(MemberTypeSyntax.self) {
             let base = TypeName(typeIdentifier.baseType) // TODO: VERIFY IF THIS SHOULD FULLY WRAP
             let fullName = "\(base.name).\(typeIdentifier.name.text.trimmed)"
             let generic = typeIdentifier.genericArgumentClause.map { GenericType(name: fullName, node: $0) }
@@ -72,6 +76,7 @@ extension TypeName {
                       array: type.array,
                       dictionary: type.dictionary,
                       closure: type.closure,
+                      set: type.set,
                       generic: type.generic,
                       isProtocolComposition: type.isProtocolComposition
             )
@@ -85,23 +90,24 @@ extension TypeName {
                       array: type.array,
                       dictionary: type.dictionary,
                       closure: type.closure,
+                      set: type.set,
                       generic: type.generic,
                       isProtocolComposition: type.isProtocolComposition
             )
         } else if let typeIdentifier = node.as(ArrayTypeSyntax.self) {
-            let elementType = TypeName(typeIdentifier.elementType)
+            let elementType = TypeName(typeIdentifier.element)
             let name = typeIdentifier.sourcerySafeTypeIdentifier
             let array = ArrayType(name: name, elementTypeName: elementType)
             self.init(name: name, array: array, generic: array.asGeneric)
         } else if let typeIdentifier = node.as(DictionaryTypeSyntax.self) {
-            let keyType = TypeName(typeIdentifier.keyType)
-            let valueType = TypeName(typeIdentifier.valueType)
+            let keyType = TypeName(typeIdentifier.key)
+            let valueType = TypeName(typeIdentifier.value)
             let name = typeIdentifier.sourcerySafeTypeIdentifier
             let dictionary = DictionaryType(name: name, valueTypeName: valueType, keyTypeName: keyType)
             self.init(name: name, dictionary: dictionary, generic: dictionary.asGeneric)
         } else if let typeIdentifier = node.as(TupleTypeSyntax.self) {
             let elements = typeIdentifier.elements.enumerated().map { idx, element -> TupleElement in
-                var firstName = element.name?.text.trimmed
+                var firstName = element.firstName?.text.trimmed
                 let secondName = element.secondName?.text.trimmed
 
                 if firstName?.nilIfNotValidParameterName == nil, secondName == nil {
@@ -119,8 +125,8 @@ extension TypeName {
                 self.init(name: name, tuple: TupleType(name: name, elements: elements))
             }
         } else if let typeIdentifier = node.as(FunctionTypeSyntax.self) {
-            let elements = typeIdentifier.arguments.map { node -> ClosureParameter in
-                let firstName = node.name?.text.trimmed.nilIfNotValidParameterName
+            let elements = typeIdentifier.parameters.map { node -> ClosureParameter in
+                let firstName = node.firstName?.text.trimmed.nilIfNotValidParameterName
                 let typeName = TypeName(node.type)
                 let specifiers = TypeName.specifiers(from: node.type)
                 
@@ -128,12 +134,13 @@ extension TypeName {
                   argumentLabel: firstName,
                   name: node.secondName?.text.trimmed ?? firstName,
                   typeName: typeName,
-                  isInout: specifiers.isInOut
+                  isInout: specifiers.isInOut,
+                  isVariadic: node.ellipsis != nil
                 )
             }
-            let returnTypeName = TypeName(typeIdentifier.returnType)
-            let asyncKeyword = typeIdentifier.fixedAsyncKeyword.map { $0.text.trimmed }
-            let throwsOrRethrows = typeIdentifier.fixedThrowsOrRethrowsKeyword.map { $0.text.trimmed }
+            let returnTypeName = TypeName(typeIdentifier.returnClause.type)
+            let asyncKeyword = typeIdentifier.effectSpecifiers?.asyncSpecifier.map { $0.text.trimmed }
+            let throwsOrRethrows = typeIdentifier.effectSpecifiers?.throwsSpecifier.map { $0.text.trimmed }
             let name = typeIdentifier.description
             self.init(
                 name: name,
@@ -156,13 +163,14 @@ extension TypeName {
                       array: type.array,
                       dictionary: type.dictionary,
                       closure: type.closure,
+                      set: type.set,
                       generic: type.generic,
                       isProtocolComposition: type.isProtocolComposition
             )
         } else if node.as(ClassRestrictionTypeSyntax.self) != nil {
             self.init(name: "AnyObject")
         } else if let typeIdentifier = node.as(PackExpansionTypeSyntax.self) {
-            self.init(typeIdentifier.patternType)
+            self.init(typeIdentifier.repetitionPattern)
             
             self.name = typeIdentifier.description
         } else {
@@ -180,7 +188,7 @@ extension TypeName {
 
         var isInOut = false
         if let typeIdentifier = type.as(AttributedTypeSyntax.self), let specifier = typeIdentifier.specifier {
-            if specifier.tokenKind == .inoutKeyword {
+            if specifier.tokenKind == .keyword(.inout) {
                 isInOut = true
             } else {
                 // Commented out because of new language features.
